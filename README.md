@@ -2,6 +2,8 @@
 
 
 A minimal, fast system info fetch tool written in Bash with random cat ASCII art.
+  ```if you hate fastfetch then this is your way to go! it has cute ascii arts and its 100% better than fastfetch```
+
 
 
 ## Features
