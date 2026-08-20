@@ -104,7 +104,7 @@ zephfetch
   │  󰌽 os       Arch Linux
   │  󰒺 wm       Hyprland 0.56.2
   │  󰋊 disk     55G / 457G (13%)
-  │  󰍛 memory   2.30 GiB / 7.69 GiB (30%)
+  │  󰍛 memory   2.30 GiB / 15.79 GiB (30%)
   │  󰏖 pkgs     14 (flatpak), 1086 (pacman)
   ╰────────────╯
 
