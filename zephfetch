@@ -1,0 +1,155 @@
+#!/bin/bash
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+BLUE='\033[0;34m'
+MAGENTA='\033[0;35m'
+CYAN='\033[0;36m'
+WHITE='\033[0;37m'
+BOLD='\033[1m'
+RESET='\033[0m'
+
+get_random_cat() {
+    local idx=$((RANDOM % 4))
+    case $idx in
+        0)
+            cat << 'EOF'
+      |\      _,,,---,,_
+ZZZzz /,'.-'`    -.  ;-;;,_
+     |,4-  ) )-,_.\ (  `'-'
+    '---''(_/--'  `-'\_)
+EOF
+            ;;
+        1)
+            cat << 'EOF'
+      ,/|         _.--''``-...___.._.,;
+     /, \'.     _-'          ,--,,,--''
+    { \    `_-''       '    /}
+     `;;'            ;   ; ;
+  ._.--''     ._,,, _..'  .;.'
+   (,_....----'''     (,..--''
+EOF
+            ;;
+        2)
+            cat << 'EOF'
+      A.,.A
+     (u u )\=-=-__---===-.          \
+     `.,,'  ,     (    `-.      /  `.-~~--..--~~~-.
+   /~/~~~~~ /...;/~~~~~  (``.   <__                 `.
+   """"~~~~~~~~~~""~~~~~~~,','~~~~~~~~~~~~~~~~.~~~~,','
+                          "`                  `._,'
+EOF
+            ;;
+        3)
+            cat << 'EOF'
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⣶⣶⣶⣴⣦⣄⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠻⠿⣿⣿⣿⣿⣿⣿⣿⣷⣀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠻⣿⣿⣿⣿⣧⡀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢹⣿⣿⣿⣿⣏⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣿⣿⣿⣿⡟⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣼⣿⣿⣿⣿⣿⠁⠀⠀⠀
+⢀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⣿⣿⣿⣿⣿⡟⠀⠀⠀⠀
+⠈⢻⣿⣿⣶⣦⣤⣀⣴⣶⣶⣤⣄⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣿⣿⣿⣿⣿⣿⠁⠀⠀⠀⠀
+⠀⠀⠘⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣧⣤⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⣿⣿⣿⣟⠀⠀⠀⠀⠀
+⠀⠀⠀⠈⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣦⡀⠀⠀⠀⠀⠀⠀⣿⣿⣿⣿⣿⣿⡇⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⢀⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣦⣄⠀⠀⠀⢠⣿⣿⣿⣿⣿⣿⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⢠⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣾⣿⣿⣿⣿⣿⣿⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣾⣿⣿⣿⣿⡄⠀⠀⠀⠀⠀
+⠀⠀⢰⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⡀⠀⠀⠀⠀
+⠀⠀⠀⢻⣿⣿⣟⣿⡿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣦⠀⠀⠀
+⠀⠀⠀⢸⣿⣿⣿⣮⣽⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣇⠀⠀
+⠀⠀⠀⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡄⠀
+⠀⠀⠈⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⠀
+⠀⠀⠀⠀⠉⠛⠿⢿⡿⠿⠟⠉⠀⠀⢹⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡄
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡅
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠹⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡟
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣇
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠃
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡏⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠃⠀⢻⣿⣿⣿⡿⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠋⠀⠀⠀⣿⣿⣿⣿⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠋⠁⠀⠀⠀⠀⢠⣿⣿⣿⣿⣷⣆
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⠀⠀⠀⠀⠀⠀⠀⠛⠿⠿⠿⠿⠛
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⣴⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠂⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣾⣿⣿⣿⣿⣿⣿⣿⣿⠟⣿⣿⣿⣿⣿⣿⣿⣿⠆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠸⣿⣿⣿⣿⣿⣿⣿⡿⠋⠀⠉⠛⠻⠿⠿⠛⠋⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠛⠿⠿⠟⠉⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+EOF
+            ;;
+    esac
+}
+
+get_user() {
+    echo "$USER"
+}
+
+get_kernel() {
+    uname -r
+}
+
+get_os() {
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        echo "$PRETTY_NAME"
+    else
+        uname -s
+    fi
+}
+
+get_wm() {
+    if [ -n "$HYPRLAND_INSTANCE_SIGNATURE" ]; then
+        hyprctl -j version 2>/dev/null | grep -oP '"version":\s*"\K[^"]+' | head -1 | xargs -I{} echo "Hyprland {}"
+    elif [ -n "$WAYLAND_DISPLAY" ]; then
+        echo "Wayland ($XDG_CURRENT_DESKTOP)"
+    elif [ -n "$DISPLAY" ]; then
+        echo "X11 ($XDG_CURRENT_DESKTOP)"
+    else
+        echo "Unknown"
+    fi
+}
+
+get_disk() {
+    df -h / | awk 'NR==2 {printf "%s / %s (%s)", $3, $2, $5}'
+}
+
+get_memory() {
+    free -b | awk 'NR==2 {printf "%.2f GiB / %.2f GiB (%.0f%%)", $3/1024/1024/1024, $2/1024/1024/1024, $3/$2*100}'
+}
+
+get_packages() {
+    local pacman_count=$(pacman -Q 2>/dev/null | wc -l)
+    local flatpak_count=$(flatpak list --columns=application 2>/dev/null | wc -l)
+    echo "$flatpak_count (flatpak), $pacman_count (pacman)"
+}
+
+print_fetch() {
+    local user=$(get_user)
+    local kernel=$(get_kernel)
+    local os=$(get_os)
+    local wm=$(get_wm)
+    local disk=$(get_disk)
+    local memory=$(get_memory)
+    local packages=$(get_packages)
+
+    echo -e "${CYAN}$(get_random_cat)${RESET}"
+    echo ""
+    local hostname=$(cat /etc/hostname 2>/dev/null || uname -n)
+    echo -e "  ${BOLD}╭─${user}@${hostname}─╮${RESET}"
+    echo -e "  ${BOLD}│${RESET}  ${CYAN}󰣇 user${RESET}     ${WHITE}${user}${RESET}"
+    echo -e "  ${BOLD}│${RESET}  ${CYAN}󰌛 kernel${RESET}   ${WHITE}${kernel}${RESET}"
+    echo -e "  ${BOLD}│${RESET}  ${CYAN}󰌽 os${RESET}       ${WHITE}${os}${RESET}"
+    echo -e "  ${BOLD}│${RESET}  ${CYAN}󰒺 wm${RESET}       ${WHITE}${wm}${RESET}"
+    echo -e "  ${BOLD}│${RESET}  ${CYAN}󰋊 disk${RESET}     ${WHITE}${disk}${RESET}"
+    echo -e "  ${BOLD}│${RESET}  ${CYAN}󰍛 memory${RESET}   ${WHITE}${memory}${RESET}"
+    echo -e "  ${BOLD}│${RESET}  ${CYAN}󰏖 pkgs${RESET}     ${WHITE}${packages}${RESET}"
+    echo -e "  ${BOLD}╰────────────╯${RESET}"
+    echo ""
+}
+
+main() {
+    print_fetch
+}
+
+main "$@"
