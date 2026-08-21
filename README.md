@@ -58,7 +58,30 @@ export PATH="$HOME/.local/bin:$PATH"
 
 zephfetch
 
+# Display custom image (full quality with graphics protocols)
+zephfetch --image /path/to/image.png
+zephfetch --image ~/Pictures/cat.jpg
+
+# Show help
+zephfetch --help
+
 ```
+
+### Image Display Support
+
+Full-quality image rendering uses terminal graphics protocols:
+
+| Terminal | Protocol | Quality |
+|----------|----------|---------|
+| **kitty** | Kitty graphics | ✅ Full |
+| **wezterm** | Sixels | ✅ Full |
+| **iTerm2** | Sixels | ✅ Full |
+| **gnome-terminal, tilix, konsole** | Sixels | ✅ Full |
+| **alacritty, foot, xterm** | Block symbols (RGB) | ✅ Good |
+
+**Requires:** `chafa` (install: `pacman -S chafa` / `apt install chafa` / `dnf install chafa`)
+
+Works from **any shell** (bash, zsh, fish, nushell) - the script uses `#!/bin/bash` shebang.
 
 
 ## Example Output
