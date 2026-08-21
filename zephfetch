@@ -11,7 +11,7 @@ BOLD='\033[1m'
 RESET='\033[0m'
 
 get_random_cat() {
-    local idx=$((RANDOM % 4))
+    local idx=$((RANDOM % 12))
     case $idx in
         0)
             cat << 'EOF'
@@ -23,59 +23,113 @@ EOF
             ;;
         1)
             cat << 'EOF'
-      ,/|         _.--''``-...___.._.,;
-     /, \'.     _-'          ,--,,,--''
-    { \    `_-''       '    /}
-     `;;'            ;   ; ;
-  ._.--''     ._,,, _..'  .;.'
-   (,_....----'''     (,..--''
+      ,/|          _..--''``-...___.._.,;
+     /, \'.      _-'          ,--,,,--''
+    { \    `_-''        '    /}
+     `;;'            ;    ; ;
+  ._.--''    ._,,, _..'  .;.'
+   (,_....----'''      (,..--''
 EOF
             ;;
         2)
             cat << 'EOF'
       A.,.A
-     (u u )\=-=-__---===-.          \
+     (u u )\=-=-__---===-.         \
      `.,,'  ,     (    `-.      /  `.-~~--..--~~~-.
-   /~/~~~~~ /...;/~~~~~  (``.   <__                 `.
+   /~/~~~~~ /...;/~~~~~  (``.    <__               `.
    """"~~~~~~~~~~""~~~~~~~,','~~~~~~~~~~~~~~~~.~~~~,','
-                          "`                  `._,'
+                          "`                 `._,'
 EOF
             ;;
         3)
             cat << 'EOF'
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⣶⣶⣶⣴⣦⣄⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠻⠿⣿⣿⣿⣿⣿⣿⣿⣷⣀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠻⣿⣿⣿⣿⣧⡀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢹⣿⣿⣿⣿⣏⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣿⣿⣿⣿⡟⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣼⣿⣿⣿⣿⣿⠁⠀⠀⠀
-⢀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⣿⣿⣿⣿⣿⡟⠀⠀⠀⠀
-⠈⢻⣿⣿⣶⣦⣤⣀⣴⣶⣶⣤⣄⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣿⣿⣿⣿⣿⣿⠁⠀⠀⠀⠀
-⠀⠀⠘⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣧⣤⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⣿⣿⣿⣟⠀⠀⠀⠀⠀
-⠀⠀⠀⠈⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣦⡀⠀⠀⠀⠀⠀⠀⣿⣿⣿⣿⣿⣿⡇⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⢀⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣦⣄⠀⠀⠀⢠⣿⣿⣿⣿⣿⣿⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⢠⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣾⣿⣿⣿⣿⣿⣿⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣾⣿⣿⣿⣿⡄⠀⠀⠀⠀⠀
-⠀⠀⢰⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⡀⠀⠀⠀⠀
-⠀⠀⠀⢻⣿⣿⣟⣿⡿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣦⠀⠀⠀
-⠀⠀⠀⢸⣿⣿⣿⣮⣽⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣇⠀⠀
-⠀⠀⠀⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡄⠀
-⠀⠀⠈⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⠀
-⠀⠀⠀⠀⠉⠛⠿⢿⡿⠿⠟⠉⠀⠀⢹⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡄
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡅
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠹⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡟
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣇
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠃
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡏⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠃⠀⢻⣿⣿⣿⡿⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠋⠀⠀⠀⣿⣿⣿⣿⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠋⠁⠀⠀⠀⠀⢠⣿⣿⣿⣿⣷⣆
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⠀⠀⠀⠀⠀⠀⠀⠛⠿⠿⠿⠿⠛
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⣴⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠂⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣾⣿⣿⣿⣿⣿⣿⣿⣿⠟⣿⣿⣿⣿⣿⣿⣿⣿⠆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠸⣿⣿⣿⣿⣿⣿⣿⡿⠋⠀⠉⠛⠻⠿⠿⠛⠋⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠛⠿⠿⠟⠉⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+       /\_/\
+      ( o.o )
+      > ^ <
+     /  |  \
+    /   |   \
+   |    |    |
+ /~|    |    |
+(  |____|____)
+ \_) Love you
+EOF
+            ;;
+        4)
+            cat << 'EOF'
+      |\__/,|    (`\
+    _.|o o  |_   ) )
+  -(((---(((--------
+EOF
+            ;;
+        5)
+            cat << 'EOF'
+    ∧___∧
+   ꒰︲⩊︲꒱   <3
+    |  つ
+EOF
+            ;;
+        6)
+            cat << 'EOF'
+   ｡   ♡ ｡    ♡｡    ♡
+ ♡｡   ＼    ｜    ／｡  ♡ 
+ 𓃠 . . . ɪ ʟᴏᴠᴇ ᴍʏ ᴄᴀᴛ . . .   𓃠
+ ♡｡   ／    ｜    ＼｡ ♡
+ ｡ ｡ ♡｡    ♡｡    ♡
+EOF
+            ;;
+        7)
+            cat << 'EOF'
+    ／l、 
+  （ﾟ､ ｡ ７
+   l、~ ヽﾉｼ
+   じじと ） 
+EOF
+            ;;
+        8)
+            cat << 'EOF'
+  ₊˚⊹∧＿∧         ｡
+  (  ̳ᴗ  ̫ ᴗ ̳)       ♡ ｡
+  ノ    つつ     *.+ﾟ𝒇𝒐𝒓 𝒚𝒐𝒖.♡
+ ⊂、  ノ        ♡.    ｡
+   し′        ｡・
+ """"""""""""""""""""""
+EOF
+            ;;
+        9)
+            cat << 'EOF'
+     ____
+  (.   \
+    \  |  
+     \ |___(\--/)
+   __/    (  . . )
+  "'._.    '-.O.'
+       '-.  \ "|\
+          '.,,/'.,
+EOF
+            ;;
+        10)
+            cat << 'EOF'
+                        
+ _______ _ __ | |__  
+|_  / _ \ '_ \| '_ \ 
+ / /  __/ |_) | | | |
+/___\___| .__/|_| |_|
+__      |_|_ _ ___   
+\ \ /\ / / _` / __|  
+ \ V  V / (_| \__ \  
+  \_/\_/ \__,_|___/  
+| |__   ___ _ __ ___ 
+| '_ \ / _ \ '__/ _ \
+| | | |  __/ | |  __/
+|_| |_|\___|_|  \___|
+                        
+EOF
+            ;;
+        11)
+            cat << 'EOF'
+                   )\._.,--....,'``.      
+.b--.        /;    _.. \    _\  (`._ ,.
+`=,-,-'~~~    `----(,_..'--(,_..'`-.;.'
 EOF
             ;;
     esac
@@ -119,9 +173,91 @@ get_memory() {
 }
 
 get_packages() {
-    local pacman_count=$(pacman -Q 2>/dev/null | wc -l)
-    local flatpak_count=$(flatpak list --columns=application 2>/dev/null | wc -l)
-    echo "$flatpak_count (flatpak), $pacman_count (pacman)"
+    local total=0
+    local managers=()
+
+    # pacman (Arch, Manjaro, EndeavourOS, etc.)
+    if command -v pacman &>/dev/null; then
+        local count=$(pacman -Q 2>/dev/null | wc -l)
+        total=$((total + count))
+        managers+=("$count (pacman)")
+    fi
+
+    # apt (Debian, Ubuntu, Mint, Pop!_OS, etc.)
+    if command -v apt &>/dev/null; then
+        local count=$(apt list --installed 2>/dev/null | wc -l)
+        total=$((total + count))
+        managers+=("$count (apt)")
+    fi
+
+    # dnf (Fedora, RHEL, CentOS, etc.)
+    if command -v dnf &>/dev/null; then
+        local count=$(dnf list installed 2>/dev/null | wc -l)
+        total=$((total + count))
+        managers+=("$count (dnf)")
+    fi
+
+    # yum (older RHEL/CentOS)
+    if command -v yum &>/dev/null && ! command -v dnf &>/dev/null; then
+        local count=$(yum list installed 2>/dev/null | wc -l)
+        total=$((total + count))
+        managers+=("$count (yum)")
+    fi
+
+    # zypper (openSUSE)
+    if command -v zypper &>/dev/null; then
+        local count=$(zypper se --installed-only 2>/dev/null | grep '^i' | wc -l)
+        total=$((total + count))
+        managers+=("$count (zypper)")
+    fi
+
+    # emerge (Gentoo)
+    if command -v emerge &>/dev/null; then
+        local count=$(qlist -I 2>/dev/null | wc -l)
+        total=$((total + count))
+        managers+=("$count (portage)")
+    fi
+
+    # nix (NixOS)
+    if command -v nix-env &>/dev/null; then
+        local count=$(nix-env -q 2>/dev/null | wc -l)
+        total=$((total + count))
+        managers+=("$count (nix)")
+    fi
+
+    # flatpak (universal)
+    if command -v flatpak &>/dev/null; then
+        local count=$(flatpak list --columns=application 2>/dev/null | wc -l)
+        total=$((total + count))
+        managers+=("$count (flatpak)")
+    fi
+
+    # snap (Ubuntu, etc.)
+    if command -v snap &>/dev/null; then
+        local count=$(snap list 2>/dev/null | wc -l)
+        total=$((total + count))
+        managers+=("$count (snap)")
+    fi
+
+    # apk (Alpine)
+    if command -v apk &>/dev/null; then
+        local count=$(apk info 2>/dev/null | wc -l)
+        total=$((total + count))
+        managers+=("$count (apk)")
+    fi
+
+    # xbps (Void Linux)
+    if command -v xbps-query &>/dev/null; then
+        local count=$(xbps-query -l 2>/dev/null | wc -l)
+        total=$((total + count))
+        managers+=("$count (xbps)")
+    fi
+
+    if [ ${#managers[@]} -eq 0 ]; then
+        echo "Unknown"
+    else
+        echo "$total total (${managers[*]})"
+    fi
 }
 
 print_fetch() {
