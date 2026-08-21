@@ -127,6 +127,31 @@ Edit the script directly to:
 - Modify package managers detected
 
 
+## Uninstall
+
+
+```bash
+
+# If installed via curl/manual copy
+
+rm ~/.local/bin/zephfetch
+
+
+# If installed via AUR (when available)
+
+yay -R zephfetch
+
+# or
+
+pacman -R zephfetch
+
+
+# If installed via AUR git version
+
+yay -R zephfetch-git
+
+```
+
 ## License
 
 
