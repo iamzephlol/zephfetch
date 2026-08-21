@@ -20,19 +20,33 @@ display_image() {
         return 1
     fi
 
-    # Try different terminal image viewers in order of preference
+    # Full quality only - use graphics protocols when available
     if command -v chafa &>/dev/null; then
-        chafa --format=symbols "$image_path"
-    elif command -v viu &>/dev/null; then
-        viu "$image_path"
-    elif command -v catimg &>/dev/null; then
-        catimg "$image_path"
-    elif command -v kitty +kitten icat &>/dev/null; then
+        # Detect terminal capabilities for best quality
+        if [ -n "$KITTY_WINDOW_ID" ] || [ "$TERM" = "xterm-kitty" ]; then
+            # Kitty graphics protocol - highest quality
+            chafa --format=kitty "$image_path"
+        elif [ -n "$WEZTERM_PANE" ] || [ "$TERM" = "wezterm" ]; then
+            # WezTerm supports sixels
+            chafa --format=sixels "$image_path"
+        elif [ -n "$ITERM_SESSION_ID" ] || [ "$TERM_PROGRAM" = "iTerm.app" ]; then
+            # iTerm2 supports sixels
+            chafa --format=sixels "$image_path"
+        elif [ -n "$VTE_VERSION" ] || [ "$TERM" = "xterm-256color" ] || [ "$TERM" = "screen-256color" ] || [ "$TERM" = "tmux-256color" ]; then
+            # VTE-based terminals (gnome-terminal, tilix, etc.) support sixels
+            chafa --format=sixels "$image_path"
+        else
+            # Fallback: try sixels first, then kitty, then high-quality symbols
+            chafa --format=sixels "$image_path" 2>/dev/null \
+                || chafa --format=kitty "$image_path" 2>/dev/null \
+                || chafa --symbols=block+space --color-space=rgb --dither=none "$image_path"
+        fi
+    elif command -v kitty &>/dev/null && [ -n "$KITTY_WINDOW_ID" ]; then
+        # Kitty's native icat
         kitty +kitten icat "$image_path"
-    elif command -v img2txt &>/dev/null; then
-        img2txt "$image_path"
     else
-        echo -e "${YELLOW}No terminal image viewer found. Install chafa, viu, catimg, or kitty for image support.${RESET}"
+        echo -e "${RED}Full-quality image display requires 'chafa' (install: pacman -S chafa / apt install chafa / dnf install chafa)${RESET}"
+        echo -e "${YELLOW}For best quality, use a terminal with graphics protocol support: kitty, wezterm, iTerm2, or any VTE-based terminal (gnome-terminal, tilix, etc.)${RESET}"
         return 1
     fi
 }
