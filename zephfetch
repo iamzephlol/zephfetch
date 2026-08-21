@@ -13,6 +13,50 @@ RESET='\033[0m'
 # Global variable for custom image
 CUSTOM_IMAGE=""
 
+# GitHub repo for updates
+ZEPHFETCH_REPO="https://github.com/iamzephlol/zephfetch"
+ZEPHFETCH_RAW="https://raw.githubusercontent.com/iamzephlol/zephfetch/main/zephfetch"
+
+self_update() {
+    echo -e "${CYAN}Checking for updates...${RESET}"
+
+    # Get current version (from script content hash)
+    local current_hash=$(sha256sum "$0" 2>/dev/null | cut -d' ' -f1)
+
+    # Fetch latest version
+    local temp_file=$(mktemp)
+    if ! curl -fsSL "$ZEPHFETCH_RAW" -o "$temp_file" 2>/dev/null; then
+        echo -e "${RED}Failed to fetch latest version${RESET}"
+        rm -f "$temp_file"
+        return 1
+    fi
+
+    local latest_hash=$(sha256sum "$temp_file" 2>/dev/null | cut -d' ' -f1)
+
+    if [ "$current_hash" = "$latest_hash" ]; then
+        echo -e "${GREEN}Already up to date!${RESET}"
+        rm -f "$temp_file"
+        return 0
+    fi
+
+    echo -e "${YELLOW}Update available. Installing...${RESET}"
+
+    # Backup current version
+    cp "$0" "$0.bak" 2>/dev/null
+
+    # Install new version
+    if mv "$temp_file" "$0" && chmod +x "$0"; then
+        echo -e "${GREEN}Updated successfully!${RESET}"
+        echo -e "${CYAN}Run 'zephfetch' to use the new version${RESET}"
+        return 0
+    else
+        echo -e "${RED}Update failed, restoring backup...${RESET}"
+        mv "$0.bak" "$0" 2>/dev/null
+        rm -f "$temp_file"
+        return 1
+    fi
+}
+
 display_image() {
     local image_path="$1"
     if [ ! -f "$image_path" ]; then
@@ -57,12 +101,14 @@ Usage: zephfetch [OPTIONS]
 
 Options:
   --image PATH    Display custom image instead of random cat ASCII art
+  --update, -u    Update zephfetch to latest version from GitHub
   --help, -h      Show this help message
 
 Examples:
   zephfetch
   zephfetch --image ~/Pictures/cat.png
   zephfetch --image /path/to/image.jpg
+  zephfetch --update
 EOF
 }
 
@@ -358,6 +404,10 @@ main() {
                     echo -e "${RED}Error: --image requires a path argument${RESET}"
                     exit 1
                 fi
+                ;;
+            --update|-u)
+                self_update
+                exit $?
                 ;;
             --help|-h)
                 print_usage
