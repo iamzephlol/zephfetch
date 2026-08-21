@@ -10,6 +10,48 @@ WHITE='\033[0;37m'
 BOLD='\033[1m'
 RESET='\033[0m'
 
+# Global variable for custom image
+CUSTOM_IMAGE=""
+
+display_image() {
+    local image_path="$1"
+    if [ ! -f "$image_path" ]; then
+        echo -e "${RED}Image not found: $image_path${RESET}"
+        return 1
+    fi
+
+    # Try different terminal image viewers in order of preference
+    if command -v chafa &>/dev/null; then
+        chafa --format=symbols "$image_path"
+    elif command -v viu &>/dev/null; then
+        viu "$image_path"
+    elif command -v catimg &>/dev/null; then
+        catimg "$image_path"
+    elif command -v kitty +kitten icat &>/dev/null; then
+        kitty +kitten icat "$image_path"
+    elif command -v img2txt &>/dev/null; then
+        img2txt "$image_path"
+    else
+        echo -e "${YELLOW}No terminal image viewer found. Install chafa, viu, catimg, or kitty for image support.${RESET}"
+        return 1
+    fi
+}
+
+print_usage() {
+    cat << 'EOF'
+Usage: zephfetch [OPTIONS]
+
+Options:
+  --image PATH    Display custom image instead of random cat ASCII art
+  --help, -h      Show this help message
+
+Examples:
+  zephfetch
+  zephfetch --image ~/Pictures/cat.png
+  zephfetch --image /path/to/image.jpg
+EOF
+}
+
 get_random_cat() {
     local idx=$((RANDOM % 12))
     case $idx in
@@ -269,8 +311,14 @@ print_fetch() {
     local memory=$(get_memory)
     local packages=$(get_packages)
 
-    echo -e "${CYAN}$(get_random_cat)${RESET}"
-    echo ""
+    if [ -n "$CUSTOM_IMAGE" ]; then
+        display_image "$CUSTOM_IMAGE"
+        echo ""
+    else
+        echo -e "${CYAN}$(get_random_cat)${RESET}"
+        echo ""
+    fi
+
     local hostname=$(cat /etc/hostname 2>/dev/null || uname -n)
     echo -e "  ${BOLD}╭─${user}@${hostname}─╮${RESET}"
     echo -e "  ${BOLD}│${RESET}  ${CYAN}󰣇 user${RESET}     ${WHITE}${user}${RESET}"
@@ -285,6 +333,30 @@ print_fetch() {
 }
 
 main() {
+    # Parse arguments
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --image)
+                if [ -n "$2" ]; then
+                    CUSTOM_IMAGE="$2"
+                    shift 2
+                else
+                    echo -e "${RED}Error: --image requires a path argument${RESET}"
+                    exit 1
+                fi
+                ;;
+            --help|-h)
+                print_usage
+                exit 0
+                ;;
+            *)
+                echo -e "${RED}Unknown option: $1${RESET}"
+                print_usage
+                exit 1
+                ;;
+        esac
+    done
+
     print_fetch
 }
 
