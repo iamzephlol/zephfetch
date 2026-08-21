@@ -39,7 +39,7 @@ A minimal, fast system info fetch tool written in Bash with random cat ASCII art
 
 # Clone or copy the script
 
-curl -o ~/.local/bin/zephfetch https://raw.githubusercontent.com/yourrepo/zephfetch/main/zephfetch
+curl -o ~/.local/bin/zephfetch https://raw.githubusercontent.com/iamzephlol/zephfetch/main/zephfetch
 
 chmod +x ~/.local/bin/zephfetch
 
