@@ -21,7 +21,7 @@ BRIGHT_WHITE='\033[1;37m'
 
 DIM='\033[2m'
 
-# Global config
+# Global config lol
 CUSTOM_IMAGE=""
 THEME="default"
 
