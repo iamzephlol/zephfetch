@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# Color definitions
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
@@ -10,8 +11,25 @@ WHITE='\033[0;37m'
 BOLD='\033[1m'
 RESET='\033[0m'
 
-# Global variable for custom image
+# Bright colors
+BRIGHT_RED='\033[1;31m'
+BRIGHT_GREEN='\033[1;32m'
+BRIGHT_YELLOW='\033[1;33m'
+BRIGHT_BLUE='\033[1;34m'
+BRIGHT_MAGENTA='\033[1;35m'
+BRIGHT_CYAN='\033[1;36m'
+BRIGHT_WHITE='\033[1;37m'
+
+# Dim
+DIM='\033[2m'
+
+# Global variables
 CUSTOM_IMAGE=""
+THEME="default"
+
+# GitHub repo for updates
+ZEPHFETCH_REPO="https://github.com/iamzephlol/zephfetch"
+ZEPHFETCH_RAW="https://raw.githubusercontent.com/iamzephlol/zephfetch/main/zephfetch"
 
 # GitHub repo for updates
 ZEPHFETCH_REPO="https://github.com/iamzephlol/zephfetch"
@@ -57,6 +75,125 @@ self_update() {
     fi
 }
 
+# Theme definitions
+apply_theme() {
+    case "$THEME" in
+        thm1|default|classic)
+            # Classic - cyan/white box
+            T_CAT="${CYAN}"
+            T_BOX="${BOLD}"
+            T_LABEL="${CYAN}"
+            T_VALUE="${WHITE}"
+            T_ICON="${CYAN}"
+            STYLE="box"
+            ;;
+        thm2|minimal)
+            # Minimal - no box, just key:value
+            T_CAT="${MAGENTA}"
+            T_BOX=""
+            T_LABEL="${BRIGHT_CYAN}"
+            T_VALUE="${WHITE}"
+            T_ICON="${BRIGHT_CYAN}"
+            STYLE="minimal"
+            ;;
+        thm3|tokyo|tokyonight)
+            # Tokyo Night - purples/blues
+            T_CAT='\033[38;2;187;154;247m'  # #bb9af7
+            T_BOLD='\033[1;38;2;187;154;247m'
+            T_LABEL='\033[38;2;125;207;255m'  # #7dcfff
+            T_VALUE='\033[38;2;192;202;245m'  # #c0caf5
+            T_ICON='\033[38;2;255;158;100m'   # #ff9e64
+            STYLE="box"
+            ;;
+        thm4|catppuccin|catppuccin-mocha)
+            # Catppuccin Mocha - pinks/mauves
+            T_CAT='\033[38;2;245;194;231m'   # #f5c2e7
+            T_BOLD='\033[1;38;2;245;194;231m'
+            T_LABEL='\033[38;2;203;166;247m' # #cba6f7
+            T_VALUE='\033[38;2;205;214;244m' # #cdd6f4
+            T_ICON='\033[38;2;249;226;175m'  # #f9e2af
+            STYLE="box"
+            ;;
+        thm5|dracula)
+            # Dracula - purples/greens
+            T_CAT='\033[38;2;189;147;249m'   # #bd93f9
+            T_BOLD='\033[1;38;2;189;147;249m'
+            T_LABEL='\033[38;2;80;250;123m'  # #50fa7b
+            T_VALUE='\033[38;2;248;248;242m' # #f8f8f2
+            T_ICON='\033[38;2;255;121;198m'  # #ff79c6
+            STYLE="box"
+            ;;
+        thm6|nord)
+            # Nord - blues/whites
+            T_CAT='\033[38;2;136;192;208m'   # #88c0d0
+            T_BOLD='\033[1;38;2;136;192;208m'
+            T_LABEL='\033[38;2;129;161;193m' # #81a1c1
+            T_VALUE='\033[38;2;216;222;233m' # #d8dee9
+            T_ICON='\033[38;2;191;97;106m'   # #bf616a
+            STYLE="box"
+            ;;
+        thm7|gruvbox)
+            # Gruvbox - warm oranges/browns
+            T_CAT='\033[38;2;251;173;67m'    # #fabd2f
+            T_BOLD='\033[1;38;2;251;173;67m'
+            T_LABEL='\033[38;2;254;128;25m'  # #fe8019
+            T_VALUE='\033[38;2;235;219;178m' # #ebdbb2
+            T_ICON='\033[38;2;142;192;124m'  # #8ec07c
+            STYLE="box"
+            ;;
+        thm8|neon|cyberpunk)
+            # Neon/Cyberpunk - bright cyans/magentas
+            T_CAT='\033[38;2;0;255;255m'     # #00ffff
+            T_BOLD='\033[1;38;2;0;255;255m'
+            T_LABEL='\033[38;2;255;0;255m'   # #ff00ff
+            T_VALUE='\033[38;2;0;255;128m'   # #00ff80
+            T_ICON='\033[38;2;255;255;0m'    # #ffff00
+            STYLE="box"
+            ;;
+        thm9|mono|monochrome)
+            # Monochrome - just bold/white
+            T_CAT="${WHITE}"
+            T_BOLD="${BOLD}${WHITE}"
+            T_LABEL="${BOLD}${WHITE}"
+            T_VALUE="${WHITE}"
+            T_ICON="${WHITE}"
+            STYLE="box"
+            ;;
+        thm10|compact)
+            # Compact - single line per field
+            T_CAT="${GREEN}"
+            T_BOLD="${BOLD}${GREEN}"
+            T_LABEL="${BRIGHT_GREEN}"
+            T_VALUE="${WHITE}"
+            T_ICON="${BRIGHT_GREEN}"
+            STYLE="compact"
+            ;;
+        *)
+            # Default to classic
+            T_CAT="${CYAN}"
+            T_BOX="${BOLD}"
+            T_LABEL="${CYAN}"
+            T_VALUE="${WHITE}"
+            T_ICON="${CYAN}"
+            STYLE="box"
+            ;;
+    esac
+}
+
+list_themes() {
+    echo -e "${BOLD}Available themes:${RESET}"
+    echo "  thm1, default, classic  - Classic cyan/white box (original)"
+    echo "  thm2, minimal           - Minimal key:value, no box"
+    echo "  thm3, tokyo, tokyonight - Tokyo Night theme"
+    echo "  thm4, catppuccin        - Catppuccin Mocha"
+    echo "  thm5, dracula           - Dracula theme"
+    echo "  thm6, nord              - Nord theme"
+    echo "  thm7, gruvbox           - Gruvbox theme"
+    echo "  thm8, neon, cyberpunk   - Neon/Cyberpunk"
+    echo "  thm9, mono, monochrome  - Monochrome"
+    echo "  thm10, compact          - Compact single-line"
+}
+
 display_image() {
     local image_path="$1"
     if [ ! -f "$image_path" ]; then
@@ -100,14 +237,18 @@ print_usage() {
 Usage: zephfetch [OPTIONS]
 
 Options:
-  --image PATH    Display custom image instead of random cat ASCII art
-  --update, -u    Update zephfetch to latest version from GitHub
-  --help, -h      Show this help message
+  --image PATH       Display custom image instead of random cat ASCII art
+  --update, -u       Update zephfetch to latest version from GitHub
+  --theme NAME, -t   Set theme (thm1-thm10, minimal, tokyo, catppuccin, dracula, nord, gruvbox, neon, mono, compact)
+  --list-themes      List all available themes
+  --help, -h         Show this help message
 
 Examples:
   zephfetch
   zephfetch --image ~/Pictures/cat.png
-  zephfetch --image /path/to/image.jpg
+  zephfetch --theme tokyo
+  zephfetch -t minimal
+  zephfetch --list-themes
   zephfetch --update
 EOF
 }
@@ -371,24 +512,50 @@ print_fetch() {
     local memory=$(get_memory)
     local packages=$(get_packages)
 
+    # Apply theme
+    apply_theme
+
+    # Print cat/image
     if [ -n "$CUSTOM_IMAGE" ]; then
         display_image "$CUSTOM_IMAGE"
         echo ""
     else
-        echo -e "${CYAN}$(get_random_cat)${RESET}"
+        echo -e "${T_CAT}$(get_random_cat)${RESET}"
         echo ""
     fi
 
     local hostname=$(cat /etc/hostname 2>/dev/null || uname -n)
-    echo -e "  ${BOLD}╭─${user}@${hostname}─╮${RESET}"
-    echo -e "  ${BOLD}│${RESET}  ${CYAN}󰣇 user${RESET}     ${WHITE}${user}${RESET}"
-    echo -e "  ${BOLD}│${RESET}  ${CYAN}󰌛 kernel${RESET}   ${WHITE}${kernel}${RESET}"
-    echo -e "  ${BOLD}│${RESET}  ${CYAN}󰌽 os${RESET}       ${WHITE}${os}${RESET}"
-    echo -e "  ${BOLD}│${RESET}  ${CYAN}󰒺 wm${RESET}       ${WHITE}${wm}${RESET}"
-    echo -e "  ${BOLD}│${RESET}  ${CYAN}󰋊 disk${RESET}     ${WHITE}${disk}${RESET}"
-    echo -e "  ${BOLD}│${RESET}  ${CYAN}󰍛 memory${RESET}   ${WHITE}${memory}${RESET}"
-    echo -e "  ${BOLD}│${RESET}  ${CYAN}󰏖 pkgs${RESET}     ${WHITE}${packages}${RESET}"
-    echo -e "  ${BOLD}╰────────────╯${RESET}"
+
+    case "$STYLE" in
+        minimal)
+            # Minimal - just key:value pairs
+            echo -e "${T_LABEL}󰣇 user${RESET}     ${T_VALUE}${user}${RESET}"
+            echo -e "${T_LABEL}󰌛 kernel${RESET}   ${T_VALUE}${kernel}${RESET}"
+            echo -e "${T_LABEL}󰌽 os${RESET}       ${T_VALUE}${os}${RESET}"
+            echo -e "${T_LABEL}󰒺 wm${RESET}       ${T_VALUE}${wm}${RESET}"
+            echo -e "${T_LABEL}󰋊 disk${RESET}     ${T_VALUE}${disk}${RESET}"
+            echo -e "${T_LABEL}󰍛 memory${RESET}   ${T_VALUE}${memory}${RESET}"
+            echo -e "${T_LABEL}󰏖 pkgs${RESET}     ${T_VALUE}${packages}${RESET}"
+            ;;
+        compact)
+            # Compact - single line
+            echo -e "${T_ICON}󰣇${RESET} ${T_LABEL}user${RESET}:${T_VALUE} ${user}${RESET}  ${T_ICON}󰌛${RESET} ${T_LABEL}kernel${RESET}:${T_VALUE} ${kernel}${RESET}  ${T_ICON}󰌽${RESET} ${T_LABEL}os${RESET}:${T_VALUE} ${os}${RESET}"
+            echo -e "${T_ICON}󰒺${RESET} ${T_LABEL}wm${RESET}:${T_VALUE} ${wm}${RESET}  ${T_ICON}󰋊${RESET} ${T_LABEL}disk${RESET}:${T_VALUE} ${disk}${RESET}  ${T_ICON}󰍛${RESET} ${T_LABEL}mem${RESET}:${T_VALUE} ${memory}${RESET}"
+            echo -e "${T_ICON}󰏖${RESET} ${T_LABEL}pkgs${RESET}:${T_VALUE} ${packages}${RESET}"
+            ;;
+        box|*)
+            # Box style (default)
+            echo -e "  ${T_BOX}╭─${user}@${hostname}─╮${RESET}"
+            echo -e "  ${T_BOX}│${RESET}  ${T_ICON}󰣇${RESET} ${T_LABEL}user${RESET}     ${T_VALUE}${user}${RESET}"
+            echo -e "  ${T_BOX}│${RESET}  ${T_ICON}󰌛${RESET} ${T_LABEL}kernel${RESET}   ${T_VALUE}${kernel}${RESET}"
+            echo -e "  ${T_BOX}│${RESET}  ${T_ICON}󰌽${RESET} ${T_LABEL}os${RESET}       ${T_VALUE}${os}${RESET}"
+            echo -e "  ${T_BOX}│${RESET}  ${T_ICON}󰒺${RESET} ${T_LABEL}wm${RESET}       ${T_VALUE}${wm}${RESET}"
+            echo -e "  ${T_BOX}│${RESET}  ${T_ICON}󰋊${RESET} ${T_LABEL}disk${RESET}     ${T_VALUE}${disk}${RESET}"
+            echo -e "  ${T_BOX}│${RESET}  ${T_ICON}󰍛${RESET} ${T_LABEL}memory${RESET}   ${T_VALUE}${memory}${RESET}"
+            echo -e "  ${T_BOX}│${RESET}  ${T_ICON}󰏖${RESET} ${T_LABEL}pkgs${RESET}     ${T_VALUE}${packages}${RESET}"
+            echo -e "  ${T_BOX}╰────────────╯${RESET}"
+            ;;
+    esac
     echo ""
 }
 
@@ -408,6 +575,19 @@ main() {
             --update|-u)
                 self_update
                 exit $?
+                ;;
+            --theme|-t)
+                if [ -n "$2" ]; then
+                    THEME="$2"
+                    shift 2
+                else
+                    echo -e "${RED}Error: --theme requires a name argument${RESET}"
+                    exit 1
+                fi
+                ;;
+            --list-themes)
+                list_themes
+                exit 0
                 ;;
             --help|-h)
                 print_usage
