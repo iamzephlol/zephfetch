@@ -88,22 +88,46 @@ list_themes() {
     echo "  thm10, compact, one     - Compact single line"
 }
 
-# Render image via chafa (graphics protocols) or fallback
+# Render image via chafa (graphics protocols); GIF/WebP/APNG animate for ZEPHFETCH_GIF_DURATION secs (default 3)
 display_image() {
     local image_path="$1"
     [ ! -f "$image_path" ] && { echo -e "${RED}Image not found: $image_path${RESET}"; return 1; }
+
+    local animated=0 mime=""
+    command -v file &>/dev/null && mime=$(file --brief --mime-type "$image_path" 2>/dev/null)
+    case "$mime" in
+        image/gif|image/webp|image/apng|image/avif|image/jxl) animated=1 ;;
+        *)
+            case "${image_path##*.}" in
+                gif|GIF|webp|WEBP|apng|APNG|avif|AVIF|jxl|JXL) animated=1 ;;
+            esac ;;
+    esac
+
     if command -v chafa &>/dev/null; then
+        local dur=()
+        [ $animated -eq 1 ] && dur=(-d "${ZEPHFETCH_GIF_DURATION:-3}")
         if [ -n "$KITTY_WINDOW_ID" ] || [ "$TERM" = "xterm-kitty" ]; then
-            chafa --format=kitty "$image_path"
+            # kitty icat animates natively at full quality
+            if [ $animated -eq 1 ] && command -v kitty &>/dev/null; then
+                kitty +kitten icat "$image_path" && return 0
+            fi
+            chafa "${dur[@]}" --format=kitty "$image_path" 2>/dev/null || chafa --format=kitty "$image_path"
         elif [ -n "$WEZTERM_PANE" ] || [ "$TERM" = "wezterm" ]; then
-            chafa --format=sixels "$image_path"
+            chafa "${dur[@]}" --format=sixels "$image_path" 2>/dev/null || chafa --format=sixels "$image_path"
         elif [ -n "$ITERM_SESSION_ID" ] || [ "$TERM_PROGRAM" = "iTerm.app" ]; then
-            chafa --format=sixels "$image_path"
+            chafa "${dur[@]}" --format=sixels "$image_path" 2>/dev/null || chafa --format=sixels "$image_path"
         elif [ -n "$VTE_VERSION" ] || [ "$TERM" = "xterm-256color" ] || [ "$TERM" = "screen-256color" ] || [ "$TERM" = "tmux-256color" ]; then
-            chafa --format=sixels "$image_path"
+            chafa "${dur[@]}" --format=sixels "$image_path" 2>/dev/null || chafa --format=sixels "$image_path"
         else
-            chafa --format=sixels "$image_path" 2>/dev/null || chafa --format=kitty "$image_path" 2>/dev/null || chafa --symbols=block+space --color-space=rgb --dither=none "$image_path"
+            chafa "${dur[@]}" --format=sixels "$image_path" 2>/dev/null \
+                || chafa "${dur[@]}" --format=kitty "$image_path" 2>/dev/null \
+                || chafa "${dur[@]}" --symbols=block+space --color-space=rgb --dither=none "$image_path" 2>/dev/null \
+                || chafa --format=sixels "$image_path" 2>/dev/null \
+                || chafa --format=kitty "$image_path" 2>/dev/null \
+                || chafa --symbols=block+space --color-space=rgb --dither=none "$image_path"
         fi
+    elif command -v timg &>/dev/null; then
+        timeout 6 timg "$image_path" 2>/dev/null || true
     elif command -v kitty &>/dev/null && [ -n "$KITTY_WINDOW_ID" ]; then
         kitty +kitten icat "$image_path"
     else
@@ -117,7 +141,7 @@ print_usage() {
 Usage: zephfetch [OPTIONS]
 
 Options:
-  --image PATH       Display custom image instead of random cat ASCII art
+  --image PATH       Display custom image or animated GIF instead of cat ASCII art
   --update, -u       Update zephfetch to latest version from GitHub
   --theme NAME, -t   Set theme (thm1-thm10, side, tree, clean, card, vertical, dots, retro, json, compact)
   --list-themes      List all available themes

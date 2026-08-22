@@ -58,28 +58,35 @@ export PATH="$HOME/.local/bin:$PATH"
 
 zephfetch
 
-# Display custom image (full quality with graphics protocols)
+# Display custom image or animated GIF (full quality with graphics protocols)
 zephfetch --image /path/to/image.png
 zephfetch --image ~/Pictures/cat.jpg
+zephfetch --image ~/Pictures/dancing_cat.gif
 
 # Show help
 zephfetch --help
 
 ```
 
-### Image Display Support
+### Image & GIF Support
 
-Full-quality image rendering uses terminal graphics protocols:
+Full-quality rendering uses terminal graphics protocols. Animated formats (GIF, WebP, APNG, AVIF, JXL) play for ~3 seconds before the info panel prints:
 
 | Terminal | Protocol | Quality |
 |----------|----------|---------|
-| **kitty** | Kitty graphics | ✅ Full |
+| **kitty** | Kitty graphics | ✅ Full (+ native GIF animation) |
 | **wezterm** | Sixels | ✅ Full |
 | **iTerm2** | Sixels | ✅ Full |
 | **gnome-terminal, tilix, konsole** | Sixels | ✅ Full |
 | **alacritty, foot, xterm** | Block symbols (RGB) | ✅ Good |
 
 **Requires:** `chafa` (install: `pacman -S chafa` / `apt install chafa` / `dnf install chafa`)
+
+GIF playback duration is configurable via environment variable:
+
+```bash
+ZEPHFETCH_GIF_DURATION=5 zephfetch --image cat.gif   # play 5 seconds
+```
 
 Works from **any shell** (bash, zsh, fish, nushell) - the script uses `#!/bin/bash` shebang.
 
