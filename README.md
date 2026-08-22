@@ -84,6 +84,46 @@ Full-quality image rendering uses terminal graphics protocols:
 Works from **any shell** (bash, zsh, fish, nushell) - the script uses `#!/bin/bash` shebang.
 
 
+## Themes
+
+10 completely different layout styles:
+
+```bash
+zephfetch --list-themes          # List all themes
+zephfetch --theme thm1           # Classic box (default)
+zephfetch --theme thm2           # Side-by-side columns
+zephfetch --theme thm3           # Tree/branch style
+zephfetch --theme thm4           # Clean horizontal separators
+zephfetch --theme thm5           # Card/panel with rounded corners
+zephfetch --theme thm6           # Vertical list
+zephfetch --theme thm7           # Minimal with dot separators
+zephfetch --theme thm8           # Retro terminal style
+zephfetch --theme thm9           # JSON-like output
+zephfetch --theme thm10          # Compact single line
+
+# Short aliases
+zephfetch -t side
+zephfetch -t tree
+zephfetch -t minimal
+zephfetch -t retro
+zephfetch -t json
+zephfetch -t compact
+```
+
+| Theme | Style | Description |
+|-------|-------|-------------|
+| **thm1** classic | Box | Original boxed layout |
+| **thm2** side | Columns | Two-column layout |
+| **thm3** tree | Tree | Branch/indent style |
+| **thm4** clean | Lines | Horizontal separators |
+| **thm5** card | Panel | Rounded card panel |
+| **thm6** vertical | List | Icons left, values right |
+| **thm7** dots | Minimal | Dot separators |
+| **thm8** retro | Retro | UPPERCASE labels |
+| **thm9** json | Raw | JSON-like output |
+| **thm10** compact | One-line | Ultra compact |
+
+
 ## Example Output
 
 
