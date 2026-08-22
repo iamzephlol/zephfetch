@@ -75,123 +75,114 @@ self_update() {
     fi
 }
 
-# Theme definitions
+# Theme definitions - completely different layouts
 apply_theme() {
     case "$THEME" in
         thm1|default|classic)
-            # Classic - cyan/white box
+            # Classic box (original)
+            STYLE="box"
             T_CAT="${CYAN}"
             T_BOX="${BOLD}"
             T_LABEL="${CYAN}"
             T_VALUE="${WHITE}"
             T_ICON="${CYAN}"
-            STYLE="box"
             ;;
-        thm2|minimal)
-            # Minimal - no box, just key:value
+        thm2|side|columns)
+            # Side-by-side two columns
+            STYLE="side"
             T_CAT="${MAGENTA}"
-            T_BOX=""
             T_LABEL="${BRIGHT_CYAN}"
             T_VALUE="${WHITE}"
             T_ICON="${BRIGHT_CYAN}"
-            STYLE="minimal"
             ;;
-        thm3|tokyo|tokyonight)
-            # Tokyo Night - purples/blues
-            T_CAT='\033[38;2;187;154;247m'  # #bb9af7
-            T_BOLD='\033[1;38;2;187;154;247m'
-            T_LABEL='\033[38;2;125;207;255m'  # #7dcfff
-            T_VALUE='\033[38;2;192;202;245m'  # #c0caf5
-            T_ICON='\033[38;2;255;158;100m'   # #ff9e64
-            STYLE="box"
-            ;;
-        thm4|catppuccin|catppuccin-mocha)
-            # Catppuccin Mocha - pinks/mauves
-            T_CAT='\033[38;2;245;194;231m'   # #f5c2e7
-            T_BOLD='\033[1;38;2;245;194;231m'
-            T_LABEL='\033[38;2;203;166;247m' # #cba6f7
-            T_VALUE='\033[38;2;205;214;244m' # #cdd6f4
-            T_ICON='\033[38;2;249;226;175m'  # #f9e2af
-            STYLE="box"
-            ;;
-        thm5|dracula)
-            # Dracula - purples/greens
-            T_CAT='\033[38;2;189;147;249m'   # #bd93f9
-            T_BOLD='\033[1;38;2;189;147;249m'
-            T_LABEL='\033[38;2;80;250;123m'  # #50fa7b
-            T_VALUE='\033[38;2;248;248;242m' # #f8f8f2
-            T_ICON='\033[38;2;255;121;198m'  # #ff79c6
-            STYLE="box"
-            ;;
-        thm6|nord)
-            # Nord - blues/whites
-            T_CAT='\033[38;2;136;192;208m'   # #88c0d0
-            T_BOLD='\033[1;38;2;136;192;208m'
-            T_LABEL='\033[38;2;129;161;193m' # #81a1c1
-            T_VALUE='\033[38;2;216;222;233m' # #d8dee9
-            T_ICON='\033[38;2;191;97;106m'   # #bf616a
-            STYLE="box"
-            ;;
-        thm7|gruvbox)
-            # Gruvbox - warm oranges/browns
-            T_CAT='\033[38;2;251;173;67m'    # #fabd2f
-            T_BOLD='\033[1;38;2;251;173;67m'
-            T_LABEL='\033[38;2;254;128;25m'  # #fe8019
-            T_VALUE='\033[38;2;235;219;178m' # #ebdbb2
-            T_ICON='\033[38;2;142;192;124m'  # #8ec07c
-            STYLE="box"
-            ;;
-        thm8|neon|cyberpunk)
-            # Neon/Cyberpunk - bright cyans/magentas
-            T_CAT='\033[38;2;0;255;255m'     # #00ffff
-            T_BOLD='\033[1;38;2;0;255;255m'
-            T_LABEL='\033[38;2;255;0;255m'   # #ff00ff
-            T_VALUE='\033[38;2;0;255;128m'   # #00ff80
-            T_ICON='\033[38;2;255;255;0m'    # #ffff00
-            STYLE="box"
-            ;;
-        thm9|mono|monochrome)
-            # Monochrome - just bold/white
-            T_CAT="${WHITE}"
-            T_BOLD="${BOLD}${WHITE}"
-            T_LABEL="${BOLD}${WHITE}"
-            T_VALUE="${WHITE}"
-            T_ICON="${WHITE}"
-            STYLE="box"
-            ;;
-        thm10|compact)
-            # Compact - single line per field
+        thm3|tree|branch)
+            # Tree/branch style
+            STYLE="tree"
             T_CAT="${GREEN}"
-            T_BOLD="${BOLD}${GREEN}"
             T_LABEL="${BRIGHT_GREEN}"
             T_VALUE="${WHITE}"
             T_ICON="${BRIGHT_GREEN}"
+            ;;
+        thm4|clean|lines)
+            # Clean horizontal separators
+            STYLE="clean"
+            T_CAT="${BLUE}"
+            T_LABEL="${BRIGHT_BLUE}"
+            T_VALUE="${WHITE}"
+            T_ICON="${BRIGHT_BLUE}"
+            ;;
+        thm5|card|panel)
+            # Card/panel style with rounded corners
+            STYLE="card"
+            T_CAT="${YELLOW}"
+            T_LABEL="${BRIGHT_YELLOW}"
+            T_VALUE="${WHITE}"
+            T_ICON="${BRIGHT_YELLOW}"
+            ;;
+        thm6|vertical|list)
+            # Vertical list with icons on left, no box
+            STYLE="vertical"
+            T_CAT="${RED}"
+            T_LABEL="${BRIGHT_RED}"
+            T_VALUE="${WHITE}"
+            T_ICON="${BRIGHT_RED}"
+            ;;
+        thm7|dots|minimal)
+            # Minimal with dot separators
+            STYLE="dots"
+            T_CAT="${CYAN}"
+            T_LABEL="${BRIGHT_CYAN}"
+            T_VALUE="${WHITE}"
+            T_ICON="${BRIGHT_CYAN}"
+            ;;
+        thm8|retro|oldschool)
+            # Retro/oldschool terminal style
+            STYLE="retro"
+            T_CAT="${GREEN}"
+            T_LABEL="${GREEN}"
+            T_VALUE="${WHITE}"
+            T_ICON="${GREEN}"
+            ;;
+        thm9|json|raw)
+            # JSON-like output
+            STYLE="json"
+            T_CAT="${MAGENTA}"
+            T_LABEL="${BRIGHT_MAGENTA}"
+            T_VALUE="${WHITE}"
+            T_ICON="${BRIGHT_MAGENTA}"
+            ;;
+        thm10|compact|one)
+            # Compact single line
             STYLE="compact"
+            T_CAT="${BRIGHT_WHITE}"
+            T_LABEL="${BRIGHT_WHITE}"
+            T_VALUE="${WHITE}"
+            T_ICON="${BRIGHT_WHITE}"
             ;;
         *)
             # Default to classic
+            STYLE="box"
             T_CAT="${CYAN}"
             T_BOX="${BOLD}"
             T_LABEL="${CYAN}"
             T_VALUE="${WHITE}"
             T_ICON="${CYAN}"
-            STYLE="box"
             ;;
     esac
 }
 
 list_themes() {
     echo -e "${BOLD}Available themes:${RESET}"
-    echo "  thm1, default, classic  - Classic cyan/white box (original)"
-    echo "  thm2, minimal           - Minimal key:value, no box"
-    echo "  thm3, tokyo, tokyonight - Tokyo Night theme"
-    echo "  thm4, catppuccin        - Catppuccin Mocha"
-    echo "  thm5, dracula           - Dracula theme"
-    echo "  thm6, nord              - Nord theme"
-    echo "  thm7, gruvbox           - Gruvbox theme"
-    echo "  thm8, neon, cyberpunk   - Neon/Cyberpunk"
-    echo "  thm9, mono, monochrome  - Monochrome"
-    echo "  thm10, compact          - Compact single-line"
+    echo "  thm1, default, classic  - Classic box (original)"
+    echo "  thm2, side, columns     - Side-by-side two columns"
+    echo "  thm3, tree, branch      - Tree/branch style"
+    echo "  thm4, clean, lines      - Clean horizontal separators"
+    echo "  thm5, card, panel       - Card/panel with rounded corners"
+    echo "  thm6, vertical, list    - Vertical list, icons left"
+    echo "  thm7, dots, minimal     - Minimal with dot separators"
+    echo "  thm8, retro, oldschool  - Retro terminal style"
+    echo "  thm9, json, raw         - JSON-like output"
+    echo "  thm10, compact, one     - Compact single line"
 }
 
 display_image() {
@@ -527,24 +518,8 @@ print_fetch() {
     local hostname=$(cat /etc/hostname 2>/dev/null || uname -n)
 
     case "$STYLE" in
-        minimal)
-            # Minimal - just key:value pairs
-            echo -e "${T_LABEL}󰣇 user${RESET}     ${T_VALUE}${user}${RESET}"
-            echo -e "${T_LABEL}󰌛 kernel${RESET}   ${T_VALUE}${kernel}${RESET}"
-            echo -e "${T_LABEL}󰌽 os${RESET}       ${T_VALUE}${os}${RESET}"
-            echo -e "${T_LABEL}󰒺 wm${RESET}       ${T_VALUE}${wm}${RESET}"
-            echo -e "${T_LABEL}󰋊 disk${RESET}     ${T_VALUE}${disk}${RESET}"
-            echo -e "${T_LABEL}󰍛 memory${RESET}   ${T_VALUE}${memory}${RESET}"
-            echo -e "${T_LABEL}󰏖 pkgs${RESET}     ${T_VALUE}${packages}${RESET}"
-            ;;
-        compact)
-            # Compact - single line
-            echo -e "${T_ICON}󰣇${RESET} ${T_LABEL}user${RESET}:${T_VALUE} ${user}${RESET}  ${T_ICON}󰌛${RESET} ${T_LABEL}kernel${RESET}:${T_VALUE} ${kernel}${RESET}  ${T_ICON}󰌽${RESET} ${T_LABEL}os${RESET}:${T_VALUE} ${os}${RESET}"
-            echo -e "${T_ICON}󰒺${RESET} ${T_LABEL}wm${RESET}:${T_VALUE} ${wm}${RESET}  ${T_ICON}󰋊${RESET} ${T_LABEL}disk${RESET}:${T_VALUE} ${disk}${RESET}  ${T_ICON}󰍛${RESET} ${T_LABEL}mem${RESET}:${T_VALUE} ${memory}${RESET}"
-            echo -e "${T_ICON}󰏖${RESET} ${T_LABEL}pkgs${RESET}:${T_VALUE} ${packages}${RESET}"
-            ;;
-        box|*)
-            # Box style (default)
+        box)
+            # Classic box (original)
             echo -e "  ${T_BOX}╭─${user}@${hostname}─╮${RESET}"
             echo -e "  ${T_BOX}│${RESET}  ${T_ICON}󰣇${RESET} ${T_LABEL}user${RESET}     ${T_VALUE}${user}${RESET}"
             echo -e "  ${T_BOX}│${RESET}  ${T_ICON}󰌛${RESET} ${T_LABEL}kernel${RESET}   ${T_VALUE}${kernel}${RESET}"
@@ -554,6 +529,98 @@ print_fetch() {
             echo -e "  ${T_BOX}│${RESET}  ${T_ICON}󰍛${RESET} ${T_LABEL}memory${RESET}   ${T_VALUE}${memory}${RESET}"
             echo -e "  ${T_BOX}│${RESET}  ${T_ICON}󰏖${RESET} ${T_LABEL}pkgs${RESET}     ${T_VALUE}${packages}${RESET}"
             echo -e "  ${T_BOX}╰────────────╯${RESET}"
+            ;;
+        side)
+            # Side-by-side two columns
+            echo -e "  ${T_ICON}󰣇${RESET} ${T_LABEL}user${RESET}: ${T_VALUE}${user}${RESET}          ${T_ICON}󰒺${RESET} ${T_LABEL}wm${RESET}: ${T_VALUE}${wm}${RESET}"
+            echo -e "  ${T_ICON}󰌛${RESET} ${T_LABEL}kernel${RESET}: ${T_VALUE}${kernel}${RESET}      ${T_ICON}󰋊${RESET} ${T_LABEL}disk${RESET}: ${T_VALUE}${disk}${RESET}"
+            echo -e "  ${T_ICON}󰌽${RESET} ${T_LABEL}os${RESET}: ${T_VALUE}${os}${RESET}          ${T_ICON}󰍛${RESET} ${T_LABEL}memory${RESET}: ${T_VALUE}${memory}${RESET}"
+            echo -e "  ${T_ICON}󰏖${RESET} ${T_LABEL}pkgs${RESET}: ${T_VALUE}${packages}${RESET}"
+            ;;
+        tree)
+            # Tree/branch style
+            echo -e "  ${T_ICON}󰣇${RESET} ${T_LABEL}user${RESET}: ${T_VALUE}${user}${RESET}"
+            echo -e "  ${T_ICON}├─${RESET} ${T_ICON}󰌛${RESET} ${T_LABEL}kernel${RESET}: ${T_VALUE}${kernel}${RESET}"
+            echo -e "  ${T_ICON}├─${RESET} ${T_ICON}󰌽${RESET} ${T_LABEL}os${RESET}: ${T_VALUE}${os}${RESET}"
+            echo -e "  ${T_ICON}├─${RESET} ${T_ICON}󰒺${RESET} ${T_LABEL}wm${RESET}: ${T_VALUE}${wm}${RESET}"
+            echo -e "  ${T_ICON}├─${RESET} ${T_ICON}󰋊${RESET} ${T_LABEL}disk${RESET}: ${T_VALUE}${disk}${RESET}"
+            echo -e "  ${T_ICON}├─${RESET} ${T_ICON}󰍛${RESET} ${T_LABEL}memory${RESET}: ${T_VALUE}${memory}${RESET}"
+            echo -e "  ${T_ICON}└─${RESET} ${T_ICON}󰏖${RESET} ${T_LABEL}pkgs${RESET}: ${T_VALUE}${packages}${RESET}"
+            ;;
+        clean)
+            # Clean horizontal separators
+            echo -e "  ${T_ICON}󰣇${RESET} ${T_LABEL}user${RESET}: ${T_VALUE}${user}${RESET}"
+            echo -e "  ${DIM}────────────────────────────────────────${RESET}"
+            echo -e "  ${T_ICON}󰌛${RESET} ${T_LABEL}kernel${RESET}: ${T_VALUE}${kernel}${RESET}"
+            echo -e "  ${T_ICON}󰌽${RESET} ${T_LABEL}os${RESET}: ${T_VALUE}${os}${RESET}"
+            echo -e "  ${DIM}────────────────────────────────────────${RESET}"
+            echo -e "  ${T_ICON}󰒺${RESET} ${T_LABEL}wm${RESET}: ${T_VALUE}${wm}${RESET}"
+            echo -e "  ${T_ICON}󰋊${RESET} ${T_LABEL}disk${RESET}: ${T_VALUE}${disk}${RESET}"
+            echo -e "  ${T_ICON}󰍛${RESET} ${T_LABEL}memory${RESET}: ${T_VALUE}${memory}${RESET}"
+            echo -e "  ${DIM}────────────────────────────────────────${RESET}"
+            echo -e "  ${T_ICON}󰏖${RESET} ${T_LABEL}pkgs${RESET}: ${T_VALUE}${packages}${RESET}"
+            ;;
+        card)
+            # Card/panel with rounded corners
+            echo -e "  ${T_BOX}╭────────────────────────────────────╮${RESET}"
+            echo -e "  ${T_BOX}│${RESET}  ${T_ICON}󰣇${RESET} ${T_LABEL}user${RESET}: ${T_VALUE}${user}${RESET}@${T_VALUE}${hostname}${RESET}"
+            echo -e "  ${T_BOX}├────────────────────────────────────┤${RESET}"
+            echo -e "  ${T_BOX}│${RESET}  ${T_ICON}󰌛${RESET} ${T_LABEL}kernel${RESET}: ${T_VALUE}${kernel}${RESET}"
+            echo -e "  ${T_BOX}│${RESET}  ${T_ICON}󰌽${RESET} ${T_LABEL}os${RESET}: ${T_VALUE}${os}${RESET}"
+            echo -e "  ${T_BOX}│${RESET}  ${T_ICON}󰒺${RESET} ${T_LABEL}wm${RESET}: ${T_VALUE}${wm}${RESET}"
+            echo -e "  ${T_BOX}├────────────────────────────────────┤${RESET}"
+            echo -e "  ${T_BOX}│${RESET}  ${T_ICON}󰋊${RESET} ${T_LABEL}disk${RESET}: ${T_VALUE}${disk}${RESET}"
+            echo -e "  ${T_BOX}│${RESET}  ${T_ICON}󰍛${RESET} ${T_LABEL}memory${RESET}: ${T_VALUE}${memory}${RESET}"
+            echo -e "  ${T_BOX}│${RESET}  ${T_ICON}󰏖${RESET} ${T_LABEL}pkgs${RESET}: ${T_VALUE}${packages}${RESET}"
+            echo -e "  ${T_BOX}╰────────────────────────────────────╯${RESET}"
+            ;;
+        vertical)
+            # Vertical list with icons on left
+            echo -e "  ${T_ICON}󰣇${RESET}  ${T_LABEL}user${RESET}    ${T_VALUE}${user}${RESET}"
+            echo -e "  ${T_ICON}󰌛${RESET}  ${T_LABEL}kernel${RESET}  ${T_VALUE}${kernel}${RESET}"
+            echo -e "  ${T_ICON}󰌽${RESET}  ${T_LABEL}os${RESET}      ${T_VALUE}${os}${RESET}"
+            echo -e "  ${T_ICON}󰒺${RESET}  ${T_LABEL}wm${RESET}      ${T_VALUE}${wm}${RESET}"
+            echo -e "  ${T_ICON}󰋊${RESET}  ${T_LABEL}disk${RESET}    ${T_VALUE}${disk}${RESET}"
+            echo -e "  ${T_ICON}󰍛${RESET}  ${T_LABEL}memory${RESET}  ${T_VALUE}${memory}${RESET}"
+            echo -e "  ${T_ICON}󰏖${RESET}  ${T_LABEL}pkgs${RESET}    ${T_VALUE}${packages}${RESET}"
+            ;;
+        dots)
+            # Minimal with dot separators
+            echo -e "  ${T_ICON}󰣇${RESET} ${T_LABEL}user${RESET} ${DIM}⋅⋅⋅${RESET} ${T_VALUE}${user}${RESET}"
+            echo -e "  ${T_ICON}󰌛${RESET} ${T_LABEL}kernel${RESET} ${DIM}⋅⋅⋅${RESET} ${T_VALUE}${kernel}${RESET}"
+            echo -e "  ${T_ICON}󰌽${RESET} ${T_LABEL}os${RESET} ${DIM}⋅⋅⋅${RESET} ${T_VALUE}${os}${RESET}"
+            echo -e "  ${T_ICON}󰒺${RESET} ${T_LABEL}wm${RESET} ${DIM}⋅⋅⋅${RESET} ${T_VALUE}${wm}${RESET}"
+            echo -e "  ${T_ICON}󰋊${RESET} ${T_LABEL}disk${RESET} ${DIM}⋅⋅⋅${RESET} ${T_VALUE}${disk}${RESET}"
+            echo -e "  ${T_ICON}󰍛${RESET} ${T_LABEL}memory${RESET} ${DIM}⋅⋅⋅${RESET} ${T_VALUE}${memory}${RESET}"
+            echo -e "  ${T_ICON}󰏖${RESET} ${T_LABEL}pkgs${RESET} ${DIM}⋅⋅⋅${RESET} ${T_VALUE}${packages}${RESET}"
+            ;;
+        retro)
+            # Retro/oldschool terminal style
+            echo -e "  ${T_LABEL}USER:${RESET}      ${T_VALUE}${user}${RESET}"
+            echo -e "  ${T_LABEL}KERNEL:${RESET}    ${T_VALUE}${kernel}${RESET}"
+            echo -e "  ${T_LABEL}OS:${RESET}        ${T_VALUE}${os}${RESET}"
+            echo -e "  ${T_LABEL}WM:${RESET}        ${T_VALUE}${wm}${RESET}"
+            echo -e "  ${T_LABEL}DISK:${RESET}      ${T_VALUE}${disk}${RESET}"
+            echo -e "  ${T_LABEL}MEMORY:${RESET}    ${T_VALUE}${memory}${RESET}"
+            echo -e "  ${T_LABEL}PKGS:${RESET}      ${T_VALUE}${packages}${RESET}"
+            ;;
+        json)
+            # JSON-like output
+            echo -e "  {"
+            echo -e "    ${T_LABEL}\"user\"${RESET}: ${T_VALUE}\"${user}\"${RESET},"
+            echo -e "    ${T_LABEL}\"kernel\"${RESET}: ${T_VALUE}\"${kernel}\"${RESET},"
+            echo -e "    ${T_LABEL}\"os\"${RESET}: ${T_VALUE}\"${os}\"${RESET},"
+            echo -e "    ${T_LABEL}\"wm\"${RESET}: ${T_VALUE}\"${wm}\"${RESET},"
+            echo -e "    ${T_LABEL}\"disk\"${RESET}: ${T_VALUE}\"${disk}\"${RESET},"
+            echo -e "    ${T_LABEL}\"memory\"${RESET}: ${T_VALUE}\"${memory}\"${RESET},"
+            echo -e "    ${T_LABEL}\"packages\"${RESET}: ${T_VALUE}\"${packages}\"${RESET}"
+            echo -e "  }"
+            ;;
+        compact)
+            # Compact single line
+            echo -e "${T_ICON}󰣇${RESET} ${T_LABEL}user${RESET}:${T_VALUE} ${user}${RESET}  ${T_ICON}󰌛${RESET} ${T_LABEL}kernel${RESET}:${T_VALUE} ${kernel}${RESET}  ${T_ICON}󰌽${RESET} ${T_LABEL}os${RESET}:${T_VALUE} ${os}${RESET}"
+            echo -e "${T_ICON}󰒺${RESET} ${T_LABEL}wm${RESET}:${T_VALUE} ${wm}${RESET}  ${T_ICON}󰋊${RESET} ${T_LABEL}disk${RESET}:${T_VALUE} ${disk}${RESET}  ${T_ICON}󰍛${RESET} ${T_LABEL}mem${RESET}:${T_VALUE} ${memory}${RESET}"
+            echo -e "${T_ICON}󰏖${RESET} ${T_LABEL}pkgs${RESET}:${T_VALUE} ${packages}${RESET}"
             ;;
     esac
     echo ""
