@@ -17,6 +17,8 @@ A minimal, fast system info fetch tool written in Bash with random cat ASCII art
 
 - **Minimal** - Shows: user, kernel, OS, window manager, disk, memory, packages
 
+- **Extended info** - `zephfetch -mi` also shows host, resolution, CPU, GPU, swap, shell, terminal and uptime
+
 - **No config needed** - Just run and go
 
 
@@ -62,6 +64,10 @@ zephfetch
 zephfetch --image /path/to/image.png
 zephfetch --image ~/Pictures/cat.jpg
 zephfetch --image ~/Pictures/dancing_cat.gif
+
+# Show extended system info
+zephfetch -mi
+zephfetch -t box -mi
 
 # Show help
 zephfetch --help

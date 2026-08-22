@@ -24,6 +24,7 @@ DIM='\033[2m'
 # Global config lol
 CUSTOM_IMAGE=""
 THEME="default"
+MORE_INFO="0"
 
 # GitHub raw URL for self-update
 ZEPHFETCH_RAW="https://raw.githubusercontent.com/iamzephlol/zephfetch/main/zephfetch"
@@ -144,6 +145,7 @@ Options:
   --image PATH       Display custom image or animated GIF instead of cat ASCII art
   --update, -u       Update zephfetch to latest version from GitHub
   --theme NAME, -t   Set theme (thm1-thm10, side, tree, clean, card, vertical, dots, retro, json, compact)
+  -mi, --more-info   Show extended info (host, resolution, cpu, gpu, swap, shell, terminal, uptime)
   --list-themes      List all available themes
   --help, -h         Show this help message
 EOF
@@ -298,10 +300,69 @@ get_packages() {
     [ ${#managers[@]} -eq 0 ] && echo "Unknown" || echo "$total total (${managers[*]})"
 }
 
-# Main output: cat/image + themed info layout
+get_host() {
+    local host=""
+    [ -r /sys/devices/virtual/dmi/id/product_name ] && host=$(cat /sys/devices/virtual/dmi/id/product_name 2>/dev/null)
+    [ -z "$host" ] && [ -r /proc/device-tree/model ] && host=$(tr -d '\0' < /proc/device-tree/model 2>/dev/null)
+    echo "${host:-Unknown}"
+}
+
+get_resolution() {
+    if command -v hyprctl &>/dev/null && [ -n "$HYPRLAND_INSTANCE_SIGNATURE" ]; then
+        hyprctl monitors 2>/dev/null | grep -oE '[0-9]+x[0-9]+' | head -1
+    elif command -v xrandr &>/dev/null && [ -n "$DISPLAY" ]; then
+        xrandr --current 2>/dev/null | grep '\*' | head -1 | awk '{print $1}'
+    else
+        echo "Unknown"
+    fi
+}
+
+get_cpu() {
+    local cpu=""
+    cpu=$(grep -m1 '^model name' /proc/cpuinfo 2>/dev/null | cut -d: -f2- | sed 's/^[[:space:]]*//')
+    [ -z "$cpu" ] && cpu=$(grep -m1 '^Model' /proc/cpuinfo 2>/dev/null | cut -d: -f2- | sed 's/^[[:space:]]*//')
+    [ -z "$cpu" ] && cpu=$(grep -m1 '^Hardware' /proc/cpuinfo 2>/dev/null | cut -d: -f2- | sed 's/^[[:space:]]*//')
+    echo "${cpu:-$(uname -m)}"
+}
+
+get_gpu() {
+    local gpu=""
+    command -v lspci &>/dev/null && gpu=$(lspci 2>/dev/null | grep -iE 'vga|3d controller|display controller' | head -1 | cut -d: -f3- | sed 's/^[[:space:]]*//; s/\[(rev[^])]*\]//; s/([^)]*) *$//')
+    echo "${gpu:-Unknown}"
+}
+
+get_swap() {
+    free -b 2>/dev/null | awk 'NR==3 {if ($2 > 0) printf "%.2f GiB / %.2f GiB (%.0f%%)", $3/1073741824, $2/1073741824, $3/$2*100; else print "None"}'
+}
+
+get_uptime() {
+    local up=$(uptime -p 2>/dev/null | sed 's/^up //')
+    [ -z "$up" ] && up=$(awk '{printf "%dd %dh %dm", int($1/86400), int($1%86400/3600), int($1%3600/60)}' /proc/uptime 2>/dev/null)
+    echo "${up:-Unknown}"
+}
+
+get_shell() { echo "${SHELL##*/}"; }
+
+get_terminal() {
+    if [ -n "$TERM_PROGRAM" ]; then echo "$TERM_PROGRAM"
+    elif [ -n "$KITTY_WINDOW_ID" ]; then echo "kitty"
+    elif [ -n "$WEZTERM_PANE" ]; then echo "wezterm"
+    else echo "${TERM:-Unknown}"
+    fi
+}
+
+# Main output: cat/image + themed info layout (-mi appends extended fields)
 print_fetch() {
     local user=$(get_user) kernel=$(get_kernel) os=$(get_os) wm=$(get_wm) disk=$(get_disk) memory=$(get_memory) packages=$(get_packages)
     apply_theme
+
+    local i j br line sep c last
+    local ex_lbl=() ex_val=()
+    local ex_icons=(󰇺 󰍹 󰻠 󰢮 󰌸 󰆍 󰄛 󰥔)
+    if [ "$MORE_INFO" = "1" ]; then
+        ex_lbl=(host res cpu gpu swap shell term uptime)
+        ex_val=("$(get_host)" "$(get_resolution)" "$(get_cpu)" "$(get_gpu)" "$(get_swap)" "$(get_shell)" "$(get_terminal)" "$(get_uptime)")
+    fi
 
     if [ -n "$CUSTOM_IMAGE" ]; then display_image "$CUSTOM_IMAGE"; echo ""; else echo -e "${T_CAT}$(get_random_cat)${RESET}"; echo ""; fi
 
@@ -317,12 +378,24 @@ print_fetch() {
             echo -e "  ${T_BOX}│${RESET}  ${T_ICON}󰋊${RESET} ${T_LABEL}disk${RESET}     ${T_VALUE}${disk}${RESET}"
             echo -e "  ${T_BOX}│${RESET}  ${T_ICON}󰍛${RESET} ${T_LABEL}memory${RESET}   ${T_VALUE}${memory}${RESET}"
             echo -e "  ${T_BOX}│${RESET}  ${T_ICON}󰏖${RESET} ${T_LABEL}pkgs${RESET}     ${T_VALUE}${packages}${RESET}"
+            if [ "$MORE_INFO" = "1" ]; then
+                for i in "${!ex_lbl[@]}"; do
+                    echo -e "  ${T_BOX}│${RESET}  ${T_ICON}${ex_icons[$i]}${RESET} ${T_LABEL}$(printf '%-9s' "${ex_lbl[$i]}")${RESET} ${T_VALUE}${ex_val[$i]}${RESET}"
+                done
+            fi
             echo -e "  ${T_BOX}╰────────────╯${RESET}" ;;
         side)
             echo -e "  ${T_ICON}󰣇${RESET} ${T_LABEL}user${RESET}: ${T_VALUE}${user}${RESET}          ${T_ICON}󰒺${RESET} ${T_LABEL}wm${RESET}: ${T_VALUE}${wm}${RESET}"
             echo -e "  ${T_ICON}󰌛${RESET} ${T_LABEL}kernel${RESET}: ${T_VALUE}${kernel}${RESET}      ${T_ICON}󰋊${RESET} ${T_LABEL}disk${RESET}: ${T_VALUE}${disk}${RESET}"
             echo -e "  ${T_ICON}󰌽${RESET} ${T_LABEL}os${RESET}: ${T_VALUE}${os}${RESET}          ${T_ICON}󰍛${RESET} ${T_LABEL}memory${RESET}: ${T_VALUE}${memory}${RESET}"
-            echo -e "  ${T_ICON}󰏖${RESET} ${T_LABEL}pkgs${RESET}: ${T_VALUE}${packages}${RESET}" ;;
+            echo -e "  ${T_ICON}󰏖${RESET} ${T_LABEL}pkgs${RESET}: ${T_VALUE}${packages}${RESET}"
+            if [ "$MORE_INFO" = "1" ]; then
+                for ((i=0; i<${#ex_lbl[@]}; i+=2)); do
+                    line="  ${T_ICON}${ex_icons[$i]}${RESET} ${T_LABEL}${ex_lbl[$i]}${RESET}: ${T_VALUE}${ex_val[$i]}${RESET}"
+                    [ $((i+1)) -lt ${#ex_lbl[@]} ] && line+="  ${T_ICON}${ex_icons[$((i+1))]}${RESET} ${T_LABEL}${ex_lbl[$((i+1))]}${RESET}: ${T_VALUE}${ex_val[$((i+1))]}${RESET}"
+                    echo -e "$line"
+                done
+            fi ;;
         tree)
             echo -e "  ${T_ICON}󰣇${RESET} ${T_LABEL}user${RESET}: ${T_VALUE}${user}${RESET}"
             echo -e "  ${T_ICON}├─${RESET} ${T_ICON}󰌛${RESET} ${T_LABEL}kernel${RESET}: ${T_VALUE}${kernel}${RESET}"
@@ -330,7 +403,16 @@ print_fetch() {
             echo -e "  ${T_ICON}├─${RESET} ${T_ICON}󰒺${RESET} ${T_LABEL}wm${RESET}: ${T_VALUE}${wm}${RESET}"
             echo -e "  ${T_ICON}├─${RESET} ${T_ICON}󰋊${RESET} ${T_LABEL}disk${RESET}: ${T_VALUE}${disk}${RESET}"
             echo -e "  ${T_ICON}├─${RESET} ${T_ICON}󰍛${RESET} ${T_LABEL}memory${RESET}: ${T_VALUE}${memory}${RESET}"
-            echo -e "  ${T_ICON}└─${RESET} ${T_ICON}󰏖${RESET} ${T_LABEL}pkgs${RESET}: ${T_VALUE}${packages}${RESET}" ;;
+            if [ "$MORE_INFO" = "1" ]; then
+                last=$(( ${#ex_lbl[@]} - 1 ))
+                echo -e "  ${T_ICON}├─${RESET} ${T_ICON}󰏖${RESET} ${T_LABEL}pkgs${RESET}: ${T_VALUE}${packages}${RESET}"
+                for i in "${!ex_lbl[@]}"; do
+                    br="${T_ICON}├─${RESET}"; [ $i -eq $last ] && br="${T_ICON}└─${RESET}"
+                    echo -e "  $br ${T_ICON}${ex_icons[$i]}${RESET} ${T_LABEL}${ex_lbl[$i]}${RESET}: ${T_VALUE}${ex_val[$i]}${RESET}"
+                done
+            else
+                echo -e "  ${T_ICON}└─${RESET} ${T_ICON}󰏖${RESET} ${T_LABEL}pkgs${RESET}: ${T_VALUE}${packages}${RESET}"
+            fi ;;
         clean)
             echo -e "  ${T_ICON}󰣇${RESET} ${T_LABEL}user${RESET}: ${T_VALUE}${user}${RESET}"
             echo -e "  ${DIM}────────────────────────────────────────${RESET}"
@@ -340,8 +422,12 @@ print_fetch() {
             echo -e "  ${T_ICON}󰒺${RESET} ${T_LABEL}wm${RESET}: ${T_VALUE}${wm}${RESET}"
             echo -e "  ${T_ICON}󰋊${RESET} ${T_LABEL}disk${RESET}: ${T_VALUE}${disk}${RESET}"
             echo -e "  ${T_ICON}󰍛${RESET} ${T_LABEL}memory${RESET}: ${T_VALUE}${memory}${RESET}"
-            echo -e "  ${DIM}────────────────────────────────────────${RESET}"
-            echo -e "  ${T_ICON}󰏖${RESET} ${T_LABEL}pkgs${RESET}: ${T_VALUE}${packages}${RESET}" ;;
+            echo -e "  ${T_ICON}󰏖${RESET} ${T_LABEL}pkgs${RESET}: ${T_VALUE}${packages}${RESET}"
+            if [ "$MORE_INFO" = "1" ]; then
+                for i in "${!ex_lbl[@]}"; do
+                    echo -e "  ${T_ICON}${ex_icons[$i]}${RESET} ${T_LABEL}${ex_lbl[$i]}${RESET}: ${T_VALUE}${ex_val[$i]}${RESET}"
+                done
+            fi ;;
         card)
             echo -e "  ${T_BOX}╭────────────────────────────────────╮${RESET}"
             echo -e "  ${T_BOX}│${RESET}  ${T_ICON}󰣇${RESET} ${T_LABEL}user${RESET}: ${T_VALUE}${user}${RESET}@${T_VALUE}${hostname}${RESET}"
@@ -353,6 +439,11 @@ print_fetch() {
             echo -e "  ${T_BOX}│${RESET}  ${T_ICON}󰋊${RESET} ${T_LABEL}disk${RESET}: ${T_VALUE}${disk}${RESET}"
             echo -e "  ${T_BOX}│${RESET}  ${T_ICON}󰍛${RESET} ${T_LABEL}memory${RESET}: ${T_VALUE}${memory}${RESET}"
             echo -e "  ${T_BOX}│${RESET}  ${T_ICON}󰏖${RESET} ${T_LABEL}pkgs${RESET}: ${T_VALUE}${packages}${RESET}"
+            if [ "$MORE_INFO" = "1" ]; then
+                for i in "${!ex_lbl[@]}"; do
+                    echo -e "  ${T_BOX}│${RESET}  ${T_ICON}${ex_icons[$i]}${RESET} ${T_LABEL}${ex_lbl[$i]}${RESET}: ${T_VALUE}${ex_val[$i]}${RESET}"
+                done
+            fi
             echo -e "  ${T_BOX}╰────────────────────────────────────╯${RESET}" ;;
         vertical)
             echo -e "  ${T_ICON}󰣇${RESET}  ${T_LABEL}user${RESET}    ${T_VALUE}${user}${RESET}"
@@ -361,7 +452,12 @@ print_fetch() {
             echo -e "  ${T_ICON}󰒺${RESET}  ${T_LABEL}wm${RESET}      ${T_VALUE}${wm}${RESET}"
             echo -e "  ${T_ICON}󰋊${RESET}  ${T_LABEL}disk${RESET}    ${T_VALUE}${disk}${RESET}"
             echo -e "  ${T_ICON}󰍛${RESET}  ${T_LABEL}memory${RESET}  ${T_VALUE}${memory}${RESET}"
-            echo -e "  ${T_ICON}󰏖${RESET}  ${T_LABEL}pkgs${RESET}    ${T_VALUE}${packages}${RESET}" ;;
+            echo -e "  ${T_ICON}󰏖${RESET}  ${T_LABEL}pkgs${RESET}    ${T_VALUE}${packages}${RESET}"
+            if [ "$MORE_INFO" = "1" ]; then
+                for i in "${!ex_lbl[@]}"; do
+                    echo -e "  ${T_ICON}${ex_icons[$i]}${RESET}  ${T_LABEL}$(printf '%-8s' "${ex_lbl[$i]}")${RESET} ${T_VALUE}${ex_val[$i]}${RESET}"
+                done
+            fi ;;
         dots)
             echo -e "  ${T_ICON}󰣇${RESET} ${T_LABEL}user${RESET} ${DIM}⋅⋅⋅${RESET} ${T_VALUE}${user}${RESET}"
             echo -e "  ${T_ICON}󰌛${RESET} ${T_LABEL}kernel${RESET} ${DIM}⋅⋅⋅${RESET} ${T_VALUE}${kernel}${RESET}"
@@ -369,7 +465,12 @@ print_fetch() {
             echo -e "  ${T_ICON}󰒺${RESET} ${T_LABEL}wm${RESET} ${DIM}⋅⋅⋅${RESET} ${T_VALUE}${wm}${RESET}"
             echo -e "  ${T_ICON}󰋊${RESET} ${T_LABEL}disk${RESET} ${DIM}⋅⋅⋅${RESET} ${T_VALUE}${disk}${RESET}"
             echo -e "  ${T_ICON}󰍛${RESET} ${T_LABEL}memory${RESET} ${DIM}⋅⋅⋅${RESET} ${T_VALUE}${memory}${RESET}"
-            echo -e "  ${T_ICON}󰏖${RESET} ${T_LABEL}pkgs${RESET} ${DIM}⋅⋅⋅${RESET} ${T_VALUE}${packages}${RESET}" ;;
+            echo -e "  ${T_ICON}󰏖${RESET} ${T_LABEL}pkgs${RESET} ${DIM}⋅⋅⋅${RESET} ${T_VALUE}${packages}${RESET}"
+            if [ "$MORE_INFO" = "1" ]; then
+                for i in "${!ex_lbl[@]}"; do
+                    echo -e "  ${T_ICON}${ex_icons[$i]}${RESET} ${T_LABEL}${ex_lbl[$i]}${RESET} ${DIM}⋅⋅⋅${RESET} ${T_VALUE}${ex_val[$i]}${RESET}"
+                done
+            fi ;;
         retro)
             echo -e "  ${T_LABEL}USER:${RESET}      ${T_VALUE}${user}${RESET}"
             echo -e "  ${T_LABEL}KERNEL:${RESET}    ${T_VALUE}${kernel}${RESET}"
@@ -377,21 +478,40 @@ print_fetch() {
             echo -e "  ${T_LABEL}WM:${RESET}        ${T_VALUE}${wm}${RESET}"
             echo -e "  ${T_LABEL}DISK:${RESET}      ${T_VALUE}${disk}${RESET}"
             echo -e "  ${T_LABEL}MEMORY:${RESET}    ${T_VALUE}${memory}${RESET}"
-            echo -e "  ${T_LABEL}PKGS:${RESET}      ${T_VALUE}${packages}${RESET}" ;;
+            echo -e "  ${T_LABEL}PKGS:${RESET}      ${T_VALUE}${packages}${RESET}"
+            if [ "$MORE_INFO" = "1" ]; then
+                for i in "${!ex_lbl[@]}"; do
+                    echo -e "  ${T_LABEL}$(printf '%-11s' "$(echo "${ex_lbl[$i]}" | LC_ALL=C tr '[:lower:]' '[:upper:]'):")${RESET} ${T_VALUE}${ex_val[$i]}${RESET}"
+                done
+            fi ;;
         json)
+            local jk=(user kernel os wm disk memory packages)
+            local jv=("$user" "$kernel" "$os" "$wm" "$disk" "$memory" "$packages")
+            if [ "$MORE_INFO" = "1" ]; then
+                jk+=(host resolution cpu gpu swap shell terminal uptime)
+                jv+=("${ex_val[@]}")
+            fi
+            last=$(( ${#jk[@]} - 1 ))
             echo -e "  {"
-            echo -e "    ${T_LABEL}\"user\"${RESET}: ${T_VALUE}\"${user}\"${RESET},"
-            echo -e "    ${T_LABEL}\"kernel\"${RESET}: ${T_VALUE}\"${kernel}\"${RESET},"
-            echo -e "    ${T_LABEL}\"os\"${RESET}: ${T_VALUE}\"${os}\"${RESET},"
-            echo -e "    ${T_LABEL}\"wm\"${RESET}: ${T_VALUE}\"${wm}\"${RESET},"
-            echo -e "    ${T_LABEL}\"disk\"${RESET}: ${T_VALUE}\"${disk}\"${RESET},"
-            echo -e "    ${T_LABEL}\"memory\"${RESET}: ${T_VALUE}\"${memory}\"${RESET},"
-            echo -e "    ${T_LABEL}\"packages\"${RESET}: ${T_VALUE}\"${packages}\"${RESET}"
+            for i in "${!jk[@]}"; do
+                c=","; [ $i -eq $last ] && c=""
+                echo -e "    ${T_LABEL}\"${jk[$i]}\"${RESET}: ${T_VALUE}\"${jv[$i]}\"${RESET}${c}"
+            done
             echo -e "  }" ;;
         compact)
             echo -e "${T_ICON}󰣇${RESET} ${T_LABEL}user${RESET}:${T_VALUE} ${user}${RESET}  ${T_ICON}󰌛${RESET} ${T_LABEL}kernel${RESET}:${T_VALUE} ${kernel}${RESET}  ${T_ICON}󰌽${RESET} ${T_LABEL}os${RESET}:${T_VALUE} ${os}${RESET}"
             echo -e "${T_ICON}󰒺${RESET} ${T_LABEL}wm${RESET}:${T_VALUE} ${wm}${RESET}  ${T_ICON}󰋊${RESET} ${T_LABEL}disk${RESET}:${T_VALUE} ${disk}${RESET}  ${T_ICON}󰍛${RESET} ${T_LABEL}mem${RESET}:${T_VALUE} ${memory}${RESET}"
-            echo -e "${T_ICON}󰏖${RESET} ${T_LABEL}pkgs${RESET}:${T_VALUE} ${packages}${RESET}" ;;
+            echo -e "${T_ICON}󰏖${RESET} ${T_LABEL}pkgs${RESET}:${T_VALUE} ${packages}${RESET}"
+            if [ "$MORE_INFO" = "1" ]; then
+                for ((i=0; i<${#ex_lbl[@]}; i+=3)); do
+                    line=""; sep=""
+                    for ((j=i; j<i+3 && j<${#ex_lbl[@]}; j++)); do
+                        line+="$sep${T_ICON}${ex_icons[$j]}${RESET} ${T_LABEL}${ex_lbl[$j]}${RESET}:${T_VALUE} ${ex_val[$j]}${RESET}"
+                        sep="  "
+                    done
+                    echo -e "$line"
+                done
+            fi ;;
     esac
     echo ""
 }
@@ -402,6 +522,7 @@ main() {
             --image) [ -n "$2" ] && { CUSTOM_IMAGE="$2"; shift 2; } || { echo -e "${RED}Error: --image requires a path argument${RESET}"; exit 1; } ;;
             --update|-u) self_update; exit $? ;;
             --theme|-t) [ -n "$2" ] && { THEME="$2"; shift 2; } || { echo -e "${RED}Error: --theme requires a name argument${RESET}"; exit 1; } ;;
+            -mi|--more-info|--mi) MORE_INFO=1; shift ;;
             --list-themes) list_themes; exit 0 ;;
             --help|-h) print_usage; exit 0 ;;
             *) echo -e "${RED}Unknown option: $1${RESET}"; print_usage; exit 1 ;;
