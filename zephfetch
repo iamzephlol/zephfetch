@@ -145,6 +145,7 @@ Options:
   --image PATH       Display custom image or animated GIF instead of cat ASCII art
   --update, -u       Update zephfetch to latest version from GitHub
   --theme NAME, -t   Set theme (thm1-thm10, side, tree, clean, card, vertical, dots, retro, json, compact)
+  --thm1..--thm10    Quick theme switch (same as --theme thmN)
   -mi, --more-info   Show extended info (host, resolution, cpu, gpu, swap, shell, terminal, uptime)
   --list-themes      List all available themes
   --help, -h         Show this help message
@@ -522,6 +523,7 @@ main() {
             --image) [ -n "$2" ] && { CUSTOM_IMAGE="$2"; shift 2; } || { echo -e "${RED}Error: --image requires a path argument${RESET}"; exit 1; } ;;
             --update|-u) self_update; exit $? ;;
             --theme|-t) [ -n "$2" ] && { THEME="$2"; shift 2; } || { echo -e "${RED}Error: --theme requires a name argument${RESET}"; exit 1; } ;;
+            --thm[1-9]|--thm10) THEME="${1#--}"; shift ;;
             -mi|--more-info|--mi) MORE_INFO=1; shift ;;
             --list-themes) list_themes; exit 0 ;;
             --help|-h) print_usage; exit 0 ;;

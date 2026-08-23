@@ -115,12 +115,17 @@ zephfetch --theme thm9           # JSON-like output
 zephfetch --theme thm10          # Compact single line
 
 # Short aliases
+# Short aliases
 zephfetch -t side
 zephfetch -t tree
 zephfetch -t minimal
 zephfetch -t retro
 zephfetch -t json
 zephfetch -t compact
+
+# Direct theme flags (combine with anything, e.g. -mi)
+zephfetch --thm1
+zephfetch --thm5 -mi
 ```
 
 | Theme | Style | Description |
