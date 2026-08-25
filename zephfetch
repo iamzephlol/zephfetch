@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # ANSI color codes
 RED='\033[0;31m'
@@ -29,8 +29,13 @@ MORE_INFO="0"
 # GitHub raw URL for self-update
 ZEPHFETCH_RAW="https://raw.githubusercontent.com/iamzephlol/zephfetch/main/zephfetch"
 
+# Termux/Android detection (TERMUX_VERSION is exported by the Termux app itself)
+IS_TERMUX=0
+[ -n "$TERMUX_VERSION" ] && IS_TERMUX=1
+
 self_update() {
     echo -e "${CYAN}Checking for updates...${RESET}"
+    command -v curl &>/dev/null || { echo -e "${RED}curl is required (pkg install curl on Termux)${RESET}"; return 1; }
     local current_hash=$(sha256sum "$0" 2>/dev/null | cut -d' ' -f1)
     local temp_file=$(mktemp)
     if ! curl -fsSL "$ZEPHFETCH_RAW" -o "$temp_file" 2>/dev/null; then
@@ -107,7 +112,9 @@ display_image() {
     if command -v chafa &>/dev/null; then
         local dur=()
         [ $animated -eq 1 ] && dur=(-d "${ZEPHFETCH_GIF_DURATION:-3}")
-        if [ -n "$KITTY_WINDOW_ID" ] || [ "$TERM" = "xterm-kitty" ]; then
+        if [ "$IS_TERMUX" = "1" ]; then
+            chafa "${dur[@]}" --symbols=block+space --color-space=rgb --dither=none "$image_path"
+        elif [ -n "$KITTY_WINDOW_ID" ] || [ "$TERM" = "xterm-kitty" ]; then
             # kitty icat animates natively at full quality
             if [ $animated -eq 1 ] && command -v kitty &>/dev/null; then
                 kitty +kitten icat "$image_path" && return 0
@@ -266,27 +273,45 @@ EOF
     esac
 }
 
-get_user() { echo "$USER"; }
+get_user() { echo "${USER:-$(id -un 2>/dev/null)}"; }
 get_kernel() { uname -r; }
 
 get_os() {
-    if [ -f /etc/os-release ]; then . /etc/os-release; echo "$PRETTY_NAME"; else uname -s; fi
+    if [ "$IS_TERMUX" = "1" ]; then
+        local ver=$(getprop ro.build.version.release 2>/dev/null)
+        echo "Android ${ver:-'?'} (Termux)"
+    elif [ -f /etc/os-release ]; then . /etc/os-release; echo "$PRETTY_NAME"; else uname -s; fi
 }
 
 get_wm() {
-    if [ -n "$HYPRLAND_INSTANCE_SIGNATURE" ]; then
+    if [ "$IS_TERMUX" = "1" ]; then echo "None (Android)"
+    elif [ -n "$HYPRLAND_INSTANCE_SIGNATURE" ]; then
         hyprctl -j version 2>/dev/null | grep -oP '"version":\s*"\K[^"]+' | head -1 | xargs -I{} echo "Hyprland {}"
     elif [ -n "$WAYLAND_DISPLAY" ]; then echo "Wayland ($XDG_CURRENT_DESKTOP)"
     elif [ -n "$DISPLAY" ]; then echo "X11 ($XDG_CURRENT_DESKTOP)"
     else echo "Unknown"; fi
 }
 
-get_disk() { df -h / | awk 'NR==2 {printf "%s / %s (%s)", $3, $2, $5}'; }
-get_memory() { free -b | awk 'NR==2 {printf "%.2f GiB / %.2f GiB (%.0f%%)", $3/1024/1024/1024, $2/1024/1024/1024, $3/$2*100}'; }
+get_disk() {
+    local target=/; [ "$IS_TERMUX" = "1" ] && target="$HOME"
+    df -h "$target" 2>/dev/null | awk 'NR==2 {printf "%s / %s (%s)", $3, $2, $5}'
+}
+get_memory() {
+    if command -v free &>/dev/null; then
+        free -b | awk 'NR==2 {printf "%.2f GiB / %.2f GiB (%.0f%%)", $3/1024/1024/1024, $2/1024/1024/1024, $3/$2*100}'
+    else
+        awk '/^MemTotal/ {t=$2} /^MemAvailable/ {a=$2} END {u=t-a; printf "%.2f GiB / %.2f GiB (%.0f%%)", u/1048576, t/1048576, u/t*100}' /proc/meminfo 2>/dev/null
+    fi
+}
 
 # Detect package managers across distros
 get_packages() {
     local total=0 managers=()
+    if [ "$IS_TERMUX" = "1" ]; then
+        local c=$(dpkg-query -f '.\n' -W 2>/dev/null | wc -l)
+        echo "${c:-0} total (dpkg)"
+        return
+    fi
     command -v pacman &>/dev/null && { local c=$(pacman -Q 2>/dev/null | wc -l); total=$((total+c)); managers+=("$c (pacman)"); }
     command -v apt &>/dev/null && { local c=$(apt list --installed 2>/dev/null | wc -l); total=$((total+c)); managers+=("$c (apt)"); }
     command -v dnf &>/dev/null && { local c=$(dnf list installed 2>/dev/null | wc -l); total=$((total+c)); managers+=("$c (dnf)"); }
@@ -303,13 +328,21 @@ get_packages() {
 
 get_host() {
     local host=""
-    [ -r /sys/devices/virtual/dmi/id/product_name ] && host=$(cat /sys/devices/virtual/dmi/id/product_name 2>/dev/null)
+    if [ "$IS_TERMUX" = "1" ]; then
+        local brand=$(getprop ro.product.brand 2>/dev/null) model=$(getprop ro.product.model 2>/dev/null)
+        [ -n "$brand" ] && [ -n "$model" ] && host="$brand $model"
+        [ -z "$host" ] && host="$brand$model"
+    fi
+    [ -z "$host" ] && [ -r /sys/devices/virtual/dmi/id/product_name ] && host=$(cat /sys/devices/virtual/dmi/id/product_name 2>/dev/null)
     [ -z "$host" ] && [ -r /proc/device-tree/model ] && host=$(tr -d '\0' < /proc/device-tree/model 2>/dev/null)
     echo "${host:-Unknown}"
 }
 
 get_resolution() {
-    if command -v hyprctl &>/dev/null && [ -n "$HYPRLAND_INSTANCE_SIGNATURE" ]; then
+    if [ "$IS_TERMUX" = "1" ]; then
+        local r=$(wm size 2>/dev/null | grep -oE '[0-9]+x[0-9]+' | awk '{r=$0} END{print r}')
+        echo "${r:-Unknown}"
+    elif command -v hyprctl &>/dev/null && [ -n "$HYPRLAND_INSTANCE_SIGNATURE" ]; then
         hyprctl monitors 2>/dev/null | grep -oE '[0-9]+x[0-9]+' | head -1
     elif command -v xrandr &>/dev/null && [ -n "$DISPLAY" ]; then
         xrandr --current 2>/dev/null | grep '\*' | head -1 | awk '{print $1}'
@@ -320,6 +353,12 @@ get_resolution() {
 
 get_cpu() {
     local cpu=""
+    if [ "$IS_TERMUX" = "1" ]; then
+        cpu=$(getprop ro.soc.model 2>/dev/null)
+        [ -z "$cpu" ] && cpu=$(getprop ro.board.platform 2>/dev/null)
+        [ -z "$cpu" ] && cpu=$(getprop ro.hardware 2>/dev/null)
+        [ -n "$cpu" ] && { echo "$cpu ($(uname -m))"; return; }
+    fi
     cpu=$(grep -m1 '^model name' /proc/cpuinfo 2>/dev/null | cut -d: -f2- | sed 's/^[[:space:]]*//')
     [ -z "$cpu" ] && cpu=$(grep -m1 '^Model' /proc/cpuinfo 2>/dev/null | cut -d: -f2- | sed 's/^[[:space:]]*//')
     [ -z "$cpu" ] && cpu=$(grep -m1 '^Hardware' /proc/cpuinfo 2>/dev/null | cut -d: -f2- | sed 's/^[[:space:]]*//')
@@ -327,13 +366,25 @@ get_cpu() {
 }
 
 get_gpu() {
+    if [ "$IS_TERMUX" = "1" ]; then
+        case $(getprop ro.hardware.egl 2>/dev/null) in
+            adreno) echo "Qualcomm Adreno"; return ;;
+            mali) echo "ARM Mali"; return ;;
+            powervr) echo "Imagination PowerVR"; return ;;
+        esac
+        echo "Unknown"; return
+    fi
     local gpu=""
     command -v lspci &>/dev/null && gpu=$(lspci 2>/dev/null | grep -iE 'vga|3d controller|display controller' | head -1 | cut -d: -f3- | sed 's/^[[:space:]]*//; s/\[(rev[^])]*\]//; s/([^)]*) *$//')
     echo "${gpu:-Unknown}"
 }
 
 get_swap() {
-    free -b 2>/dev/null | awk 'NR==3 {if ($2 > 0) printf "%.2f GiB / %.2f GiB (%.0f%%)", $3/1073741824, $2/1073741824, $3/$2*100; else print "None"}'
+    if command -v free &>/dev/null; then
+        free -b 2>/dev/null | awk 'NR==3 {if ($2 > 0) printf "%.2f GiB / %.2f GiB (%.0f%%)", $3/1073741824, $2/1073741824, $3/$2*100; else print "None"}'
+    else
+        awk '/^SwapTotal/ {t=$2} /^SwapFree/ {f=$2} END {if (t > 0) printf "%.2f GiB / %.2f GiB (%.0f%%)", (t-f)/1048576, t/1048576, (t-f)/t*100; else print "None"}' /proc/meminfo 2>/dev/null
+    fi
 }
 
 get_uptime() {
@@ -345,7 +396,8 @@ get_uptime() {
 get_shell() { echo "${SHELL##*/}"; }
 
 get_terminal() {
-    if [ -n "$TERM_PROGRAM" ]; then echo "$TERM_PROGRAM"
+    if [ "$IS_TERMUX" = "1" ]; then echo "Termux"
+    elif [ -n "$TERM_PROGRAM" ]; then echo "$TERM_PROGRAM"
     elif [ -n "$KITTY_WINDOW_ID" ]; then echo "kitty"
     elif [ -n "$WEZTERM_PANE" ]; then echo "wezterm"
     else echo "${TERM:-Unknown}"
@@ -365,7 +417,8 @@ print_fetch() {
         ex_val=("$(get_host)" "$(get_resolution)" "$(get_cpu)" "$(get_gpu)" "$(get_swap)" "$(get_shell)" "$(get_terminal)" "$(get_uptime)")
     fi
 
-    if [ -n "$CUSTOM_IMAGE" ]; then display_image "$CUSTOM_IMAGE"; echo ""; else echo -e "${T_CAT}$(get_random_cat)${RESET}"; echo ""; fi
+    local img_rc=0
+    if [ -n "$CUSTOM_IMAGE" ]; then display_image "$CUSTOM_IMAGE"; img_rc=$?; echo ""; else echo -e "${T_CAT}$(get_random_cat)${RESET}"; echo ""; fi
 
     local hostname=$(cat /etc/hostname 2>/dev/null || uname -n)
 
@@ -381,7 +434,7 @@ print_fetch() {
             echo -e "  ${T_BOX}│${RESET}  ${T_ICON}󰏖${RESET} ${T_LABEL}pkgs${RESET}     ${T_VALUE}${packages}${RESET}"
             if [ "$MORE_INFO" = "1" ]; then
                 for i in "${!ex_lbl[@]}"; do
-                    echo -e "  ${T_BOX}│${RESET}  ${T_ICON}${ex_icons[$i]}${RESET} ${T_LABEL}$(printf '%-9s' "${ex_lbl[$i]}")${RESET} ${T_VALUE}${ex_val[$i]}${RESET}"
+                    echo -e "  ${T_BOX}│${RESET}  ${T_ICON}${ex_icons[$i]}${RESET} ${T_LABEL}$(printf '%-9s' "${ex_lbl[$i]}")${RESET}${T_VALUE}${ex_val[$i]}${RESET}"
                 done
             fi
             echo -e "  ${T_BOX}╰────────────╯${RESET}" ;;
@@ -456,7 +509,7 @@ print_fetch() {
             echo -e "  ${T_ICON}󰏖${RESET}  ${T_LABEL}pkgs${RESET}    ${T_VALUE}${packages}${RESET}"
             if [ "$MORE_INFO" = "1" ]; then
                 for i in "${!ex_lbl[@]}"; do
-                    echo -e "  ${T_ICON}${ex_icons[$i]}${RESET}  ${T_LABEL}$(printf '%-8s' "${ex_lbl[$i]}")${RESET} ${T_VALUE}${ex_val[$i]}${RESET}"
+                    echo -e "  ${T_ICON}${ex_icons[$i]}${RESET}  ${T_LABEL}$(printf '%-8s' "${ex_lbl[$i]}")${RESET}${T_VALUE}${ex_val[$i]}${RESET}"
                 done
             fi ;;
         dots)
@@ -482,7 +535,7 @@ print_fetch() {
             echo -e "  ${T_LABEL}PKGS:${RESET}      ${T_VALUE}${packages}${RESET}"
             if [ "$MORE_INFO" = "1" ]; then
                 for i in "${!ex_lbl[@]}"; do
-                    echo -e "  ${T_LABEL}$(printf '%-11s' "$(echo "${ex_lbl[$i]}" | LC_ALL=C tr '[:lower:]' '[:upper:]'):")${RESET} ${T_VALUE}${ex_val[$i]}${RESET}"
+                    echo -e "  ${T_LABEL}$(printf '%-11s' "$(echo "${ex_lbl[$i]}" | LC_ALL=C tr '[:lower:]' '[:upper:]'):")${RESET}${T_VALUE}${ex_val[$i]}${RESET}"
                 done
             fi ;;
         json)
@@ -515,6 +568,7 @@ print_fetch() {
             fi ;;
     esac
     echo ""
+    return $img_rc
 }
 
 main() {

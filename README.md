@@ -19,6 +19,8 @@ A minimal, fast system info fetch tool written in Bash with random cat ASCII art
 
 - **Extended info** - `zephfetch -mi` also shows host, resolution, CPU, GPU, swap, shell, terminal and uptime
 
+- **Android support** - Works in Termux: shows device model, SoC, GPU, screen size and package count
+
 - **No config needed** - Just run and go
 
 
@@ -51,6 +53,26 @@ chmod +x ~/.local/bin/zephfetch
 export PATH="$HOME/.local/bin:$PATH"
 
 ```
+
+
+## Android (Termux)
+
+
+zephfetch works on Android via [Termux](https://termux.dev) and shows real device info (model, SoC, GPU driver, dpkg package count):
+
+```bash
+
+pkg install curl -y
+
+curl -o $PREFIX/bin/zephfetch https://raw.githubusercontent.com/iamzephlol/zephfetch/main/zephfetch
+
+chmod +x $PREFIX/bin/zephfetch
+
+```
+
+- `$PREFIX/bin` is already in Termux's PATH - no extra config needed
+- `--image` renders with colored block characters in Termux (`pkg install chafa` for it)
+- If launching directly fails on older Termux setups, run it with `bash zephfetch`
 
 
 ## Usage
