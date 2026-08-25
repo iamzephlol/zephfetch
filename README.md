@@ -210,6 +210,10 @@ Edit the script directly to:
 
 rm ~/.local/bin/zephfetch
 
+# If installed on Android via Termux
+
+rm $PREFIX/bin/zephfetch
+
 
 # If installed via AUR (when available)
 
