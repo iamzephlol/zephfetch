@@ -21,6 +21,8 @@ A minimal, fast system info fetch tool written in Bash with random cat ASCII art
 
 - **Android support** - Works in Termux: shows device model, SoC, GPU, screen size and package count
 
+- **Windows support** - Works in Git Bash, MSYS2, Cygwin and WSL via built-in PowerShell/wmic fallbacks
+
 - **No config needed** - Just run and go
 
 
@@ -73,6 +75,38 @@ chmod +x $PREFIX/bin/zephfetch
 - `$PREFIX/bin` is already in Termux's PATH - no extra config needed
 - `--image` renders with colored block characters in Termux (`pkg install chafa` for it)
 - If launching directly fails on older Termux setups, run it with `bash zephfetch`
+
+
+## Windows
+
+Zephfetch works natively on Windows via **Git Bash**, **MSYS2**, **Cygwin**, and **WSL**. All system-info functions automatically fall back to `wmic` or PowerShell when Linux tools aren't available.
+
+### Install
+
+```bash
+# Clone and install manually
+git clone https://github.com/iamzephlol/zephfetch.git
+cd zephfetch
+cp zephfetch ~/.local/bin/
+chmod +x ~/.local/bin/zephfetch
+```
+
+- If `~/.local/bin` isn't in your PATH, add it: `setx PATH "%PATH%;%USERPROFILE%\.local\bin"`
+- **PowerShell** is required for extended info on Windows (ships with Windows 10/11 by default)
+- **chafa** via MSYS2 (`pacman -S chafa`) enables inline image/GIF rendering
+- ANSI colors work in **Windows Terminal**, **Git Bash**, and **MSYS2**
+
+### Usage (same as everywhere)
+
+```bash
+zephfetch
+zephfetch -mi          # extended info
+zephfetch --image cat.gif
+zephfetch --theme side
+zephfetch --list-themes
+```
+
+Supported on all 10 themes, image display, and self-update (`--update`).
 
 
 ## Usage
