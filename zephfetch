@@ -33,6 +33,20 @@ ZEPHFETCH_RAW="https://raw.githubusercontent.com/iamzephlol/zephfetch/main/zephf
 IS_TERMUX=0
 [ -n "$TERMUX_VERSION" ] && IS_TERMUX=1
 
+# Windows detection (MSYS2, Cygwin, Git Bash, WSL with Windows host)
+IS_WINDOWS=0
+IS_MSYS=0
+IS_CYGWIN=0
+case "$(uname -s)" in
+    MINGW*|MSYS*|CYGWIN*) IS_WINDOWS=1 ;;
+esac
+[ -n "$MSYSTEM" ] && IS_MSYS=1
+[ "$IS_WINDOWS" = "1" ] && case "$(uname -s)" in CYGWIN*) IS_CYGWIN=1 ;; esac
+# Detect Windows host under WSL
+if [ "$IS_TERMUX" = "0" ] && [ -f /proc/version ] && grep -qi microsoft /proc/version 2>/dev/null; then
+    IS_WINDOWS=1
+fi
+
 self_update() {
     echo -e "${CYAN}Checking for updates...${RESET}"
     command -v curl &>/dev/null || { echo -e "${RED}curl is required (pkg install curl on Termux)${RESET}"; return 1; }
@@ -94,6 +108,24 @@ list_themes() {
     echo "  thm10, compact, one     - Compact single line"
 }
 
+# Run a PowerShell command, falling back to powershell.exe or pwsh.
+# Prints nothing on failure; the caller must handle empty output.
+run_powershell() {
+    local cmd="$1"
+    local out=""
+    if command -v pwsh &>/dev/null; then
+        out=$(pwsh -NoProfile -Command "$cmd" 2>/dev/null)
+    elif command -v powershell.exe &>/dev/null; then
+        out=$(powershell.exe -NoProfile -Command "$cmd" 2>/dev/null)
+    elif command -v powershell &>/dev/null; then
+        out=$(powershell -NoProfile -Command "$cmd" 2>/dev/null)
+    else
+        return 1
+    fi
+    # Trim trailing CR/LF noise that PowerShell adds; take first non-empty line, trim trailing whitespace
+    printf '%s' "$out" | tr -d '\r' | awk 'NF{$1=$1; print; exit}'
+}
+
 # Render image via chafa (graphics protocols); GIF/WebP/APNG animate for ZEPHFETCH_GIF_DURATION secs (default 3)
 display_image() {
     local image_path="$1"
@@ -138,6 +170,13 @@ display_image() {
         timeout 6 timg "$image_path" 2>/dev/null || true
     elif command -v kitty &>/dev/null && [ -n "$KITTY_WINDOW_ID" ]; then
         kitty +kitten icat "$image_path"
+    elif [ "$IS_WINDOWS" = "1" ] && command -v chafa.exe &>/dev/null; then
+        chafa.exe "${dur[@]}" --symbols=block+space --color-space=rgb --dither=none "$image_path" 2>/dev/null \
+            || chafa.exe "${dur[@]}" --format=sixels "$image_path" 2>/dev/null \
+            || chafa.exe --symbols=block+space --color-space=rgb --dither=none "$image_path" 2>/dev/null
+    elif [ "$IS_WINDOWS" = "1" ] && command -v powershell.exe &>/dev/null; then
+        echo -e "${YELLOW}Image: $image_path${RESET}"
+        echo -e "${DIM}Install 'chafa' via MSYS2 ('pacman -S chafa') for inline image display.${RESET}"
     else
         echo -e "${RED}Requires 'chafa' for image display${RESET}"
         return 1
@@ -277,6 +316,14 @@ get_user() { echo "${USER:-$(id -un 2>/dev/null)}"; }
 get_kernel() { uname -r; }
 
 get_os() {
+    if [ "$IS_WINDOWS" = "1" ]; then
+        local ver=$(run_powershell '(Get-CimInstance Win32_OperatingSystem).Caption')
+        [ -n "$ver" ] && { echo "$ver"; return; }
+        local os_name=$(wmic os get Caption /value 2>/dev/null | grep -oE 'Caption=(.*)' | cut -d= -f2-)
+        local os_ver=$(wmic os get Version /value 2>/dev/null | grep -oE 'Version=(.*)' | cut -d= -f2-)
+        echo "${os_name:-Windows} ${os_ver:-}"
+        return
+    fi
     if [ "$IS_TERMUX" = "1" ]; then
         local ver=$(getprop ro.build.version.release 2>/dev/null)
         echo "Android ${ver:-'?'} (Termux)"
@@ -284,6 +331,19 @@ get_os() {
 }
 
 get_wm() {
+    if [ "$IS_WINDOWS" = "1" ]; then
+        if command -v wmic &>/dev/null; then
+            local dwm=$(wmic process where "name='dwm.exe'" get Name /value 2>/dev/null | grep -iE 'name=' | head -n1 | cut -d= -f2-)
+            [ -n "$dwm" ] && { echo "Desktop Window Manager (Windows)"; return; }
+        fi
+        # Fallback: detect common Windows desktop shells
+        if command -v powershell.exe &>/dev/null || command -v pwsh &>/dev/null || command -v powershell &>/dev/null; then
+            echo "Windows Desktop (Explorer)"
+        else
+            echo "Windows"
+        fi
+        return
+    fi
     if [ "$IS_TERMUX" = "1" ]; then echo "None (Android)"
     elif [ -n "$HYPRLAND_INSTANCE_SIGNATURE" ]; then
         hyprctl -j version 2>/dev/null | grep -oP '"version":\s*"\K[^"]+' | head -1 | xargs -I{} echo "Hyprland {}"
@@ -293,10 +353,44 @@ get_wm() {
 }
 
 get_disk() {
-    local target=/; [ "$IS_TERMUX" = "1" ] && target="$HOME"
+    local target=/
+    if [ "$IS_WINDOWS" = "1" ]; then
+        # Use PowerShell for clean byte-to-GB conversion on Windows
+        local disk_info
+        disk_info=$(run_powershell "try { \$d=Get-CimInstance Win32_LogicalDisk -Filter 'DeviceID=C:'; \$u=\$d.Size-\$d.FreeSpace; \$t=\$d.Size; \$pg=\$u/\$t*100; '{0:N2} / {1:N2} ({2:N0}%)' -f (\$u/1GB),(\$t/1GB),\$pg } catch { 'Unknown' }")
+        if [ -n "$disk_info" ]; then
+            echo "$disk_info"
+        else
+            echo "Unknown"
+        fi
+        return
+    fi
+    [ "$IS_TERMUX" = "1" ] && target="$HOME"
     df -h "$target" 2>/dev/null | awk 'NR==2 {printf "%s / %s (%s)", $3, $2, $5}'
 }
 get_memory() {
+    if [ "$IS_WINDOWS" = "1" ]; then
+        local total_kb free_kb
+        if command -v wmic &>/dev/null; then
+            total_kb=$(wmic OS get TotalVisibleMemorySize /value 2>/dev/null | grep -iE 'totalvisiblememorysize=' | head -n1 | cut -d= -f2)
+            free_kb=$(wmic OS get FreePhysicalMemory /value 2>/dev/null | grep -iE 'freephysicalmemory=' | head -n1 | cut -d= -f2)
+        else
+            total_kb=$(run_powershell '[math]::Round((Get-CimInstance Win32_OperatingSystem).TotalVisibleMemorySize)')
+            free_kb=$(run_powershell '[math]::Round((Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory)')
+        fi
+        total_kb=${total_kb:-0}
+        free_kb=${free_kb:-0}
+        if [ "$total_kb" -gt 0 ] 2>/dev/null; then
+            local used_kb=$((total_kb - free_kb))
+            local total_gb=$(awk "BEGIN {printf \"%.2f\", $total_kb/1024/1024}")
+            local used_gb=$(awk "BEGIN {printf \"%.2f\", $used_kb/1024/1024}")
+            local pct=$(awk "BEGIN {printf \"%.0f\", $used_kb/$total_kb*100}")
+            echo "$used_gb GiB / $total_gb GiB ($pct%)"
+        else
+            echo "Unknown"
+        fi
+        return
+    fi
     if command -v free &>/dev/null; then
         free -b | awk 'NR==2 {printf "%.2f GiB / %.2f GiB (%.0f%%)", $3/1024/1024/1024, $2/1024/1024/1024, $3/$2*100}'
     else
@@ -307,6 +401,19 @@ get_memory() {
 # Detect package managers across distros
 get_packages() {
     local total=0 managers=()
+    if [ "$IS_WINDOWS" = "1" ]; then
+        local c=0 mgr=""
+        command -v winget &>/dev/null && { c=$(winget list 2>/dev/null | grep -cE '^[A-Za-z]' || echo 0); mgr="winget"; }
+        command -v pip &>/dev/null && { local pc=$(pip list 2>/dev/null | grep -cE '^[A-Za-z]' || echo 0); c=$((c + pc)); mgr="$mgr pip"; }
+        command -v npm &>/dev/null && { local nc=$(npm list -g --depth=0 2>/dev/null | grep -cE '├─|└─' || echo 0); c=$((c + nc)); mgr="$mgr npm"; }
+        command -v choco &>/dev/null && { local cc=$(choco list --local-only 2>/dev/null | grep -cE '^\S' || echo 0); c=$((c + cc)); mgr="$mgr choco"; }
+        if [ "$c" -gt 0 ] 2>/dev/null; then
+            echo "${c} total (${mgr:-unknown})"
+        else
+            echo "Unknown"
+        fi
+        return
+    fi
     if [ "$IS_TERMUX" = "1" ]; then
         local c=$(dpkg-query -f '.\n' -W 2>/dev/null | wc -l)
         echo "${c:-0} total (dpkg)"
@@ -328,6 +435,18 @@ get_packages() {
 
 get_host() {
     local host=""
+    if [ "$IS_WINDOWS" = "1" ]; then
+        local brand=$(run_powershell '(Get-CimInstance Win32_ComputerSystem).Manufacturer')
+        local model=$(run_powershell '(Get-CimInstance Win32_ComputerSystem).Model')
+        [ -n "$brand" ] && [ -n "$model" ] && host="$brand $model"
+        [ -z "$host" ] && {
+            local wmic_host=$(wmic computersystem get Model /value 2>/dev/null | grep -oE 'Model=(.*)' | cut -d= -f2-)
+            [ -n "$wmic_host" ] && host="$wmic_host"
+        }
+        [ -z "$host" ] && host=$(wmic os get Caption /value 2>/dev/null | grep -oE 'Caption=(.*)' | cut -d= -f2-)
+        echo "${host:-Unknown}"
+        return
+    fi
     if [ "$IS_TERMUX" = "1" ]; then
         local brand=$(getprop ro.product.brand 2>/dev/null) model=$(getprop ro.product.model 2>/dev/null)
         [ -n "$brand" ] && [ -n "$model" ] && host="$brand $model"
@@ -339,6 +458,17 @@ get_host() {
 }
 
 get_resolution() {
+    if [ "$IS_WINDOWS" = "1" ]; then
+        local res=""
+        if command -v wmic &>/dev/null; then
+            res=$(wmic desktopmonitor get ScreenWidth,ScreenHeight /value 2>/dev/null | grep -iE 'screenwidth|screenheight' | paste -sd'x' - | tr -d ' ')
+        fi
+        if [ -z "$res" ]; then
+            res=$(run_powershell "try { Add-Type -AssemblyName SystemWindowsForms; \$s=[SystemWindows.Forms.Screen]::PrimaryScreen.Bounds; '\$(\$s.Width)x\$(\$s.Height)' } catch { '' }" 2>/dev/null)
+        fi
+        echo "${res:-Unknown}"
+        return
+    fi
     if [ "$IS_TERMUX" = "1" ]; then
         local r=$(wm size 2>/dev/null | grep -oE '[0-9]+x[0-9]+' | awk '{r=$0} END{print r}')
         echo "${r:-Unknown}"
@@ -353,6 +483,16 @@ get_resolution() {
 
 get_cpu() {
     local cpu=""
+    if [ "$IS_WINDOWS" = "1" ]; then
+        cpu=$(run_powershell '(Get-CimInstance Win32_Processor).Name')
+        if [ -z "$cpu" ]; then
+            cpu=$(wmic cpu get Name /value 2>/dev/null | grep -iE 'name=' | head -n1 | cut -d= -f2- | sed 's/^[[:space:]]*//')
+        fi
+        # Clean up: remove extra spaces and parenthetical suffixes like "(R)"
+        cpu=$(echo "$cpu" | sed 's/[[:space:]]*([Rr])\?$//; s/[[:space:]]*$//')
+        echo "${cpu:-$(uname -m)}"
+        return
+    fi
     if [ "$IS_TERMUX" = "1" ]; then
         cpu=$(getprop ro.soc.model 2>/dev/null)
         [ -z "$cpu" ] && cpu=$(getprop ro.board.platform 2>/dev/null)
@@ -366,6 +506,15 @@ get_cpu() {
 }
 
 get_gpu() {
+    if [ "$IS_WINDOWS" = "1" ]; then
+        local gpu=""
+        if command -v wmic &>/dev/null; then
+            gpu=$(wmic path win32_videocontroller get Name /value 2>/dev/null | grep -iE 'name=' | head -n1 | cut -d= -f2- | sed 's/^[[:space:]]*//')
+        fi
+        [ -z "$gpu" ] && gpu=$(run_powershell '(Get-CimInstance Win32_VideoController).Name')
+        echo "${gpu:-Unknown}"
+        return
+    fi
     if [ "$IS_TERMUX" = "1" ]; then
         case $(getprop ro.hardware.egl 2>/dev/null) in
             adreno) echo "Qualcomm Adreno"; return ;;
@@ -380,6 +529,18 @@ get_gpu() {
 }
 
 get_swap() {
+    if [ "$IS_WINDOWS" = "1" ]; then
+        # Windows uses pagefile.sys instead of swap; report its size if available
+        local pf_size
+        pf_size=$(run_powershell 'Get-CimInstance Win32_PageFileUsage | Select-Object AllocatedBaseSize | ForEach-Object { $_.AllocatedBaseSize }' 2>/dev/null)
+        if [ -n "$pf_size" ] && [ "$pf_size" -gt 0 ] 2>/dev/null; then
+            local pf_gb=$(awk "BEGIN {printf \"%.2f\", $pf_size/1024}")
+            echo "$pf_gb GiB (pagefile.sys)"
+        else
+            echo "None (Windows uses pagefile.sys)"
+        fi
+        return
+    fi
     if command -v free &>/dev/null; then
         free -b 2>/dev/null | awk 'NR==3 {if ($2 > 0) printf "%.2f GiB / %.2f GiB (%.0f%%)", $3/1073741824, $2/1073741824, $3/$2*100; else print "None"}'
     else
@@ -388,18 +549,61 @@ get_swap() {
 }
 
 get_uptime() {
+    if [ "$IS_WINDOWS" = "1" ]; then
+        local up=""
+        if command -v wmic &>/dev/null; then
+            local boot=$(wmic os get LastBootUpTime /value 2>/dev/null | grep -iE 'lastbootuptime=' | head -n1 | cut -d= -f2-)
+            if [ -n "$boot" ]; then
+                # WMI timestamp: 20240115123456.000000+000
+                local year=${boot:0:4} month=${boot:4:2} day=${boot:6:2}
+                local hour=${boot:8:2} min=${boot:10:2} sec=${boot:12:2}
+                local boot_epoch=$(date -u -d "${year}-${month}-${day} ${hour}:${min}:${sec}" +%s 2>/dev/null)
+                local now_epoch=$(date -u +%s 2>/dev/null)
+                if [ -n "$boot_epoch" ] && [ -n "$now_epoch" ]; then
+                    local diff=$((now_epoch - boot_epoch))
+                    local d=$((diff/86400)) h=$((diff%86400/3600)) m=$((diff%3600/60))
+                    up="${d}d ${h}h ${m}m"
+                fi
+            fi
+        fi
+        # Fallback via PowerShell if wmic failed
+        if [ -z "$up" ]; then
+            local uptime_ms=$(run_powershell 'Get-CimInstance Win32_OperatingSystem | ForEach-Object { $_.LastBootUpTime }' 2>/dev/null)
+            if [ -n "$uptime_ms" ]; then
+                up=$(awk -v ts="$uptime_ms" 'BEGIN{
+                    gsub(/[-:T]/," ",ts); sub(/\.[0-9]+/,"",ts); sub(/[+-][0-9]+$/,"",ts)
+                    cmd="date -u -d \""ts"\" +%s 2>/dev/null"
+                    cmd | getline bt; close(cmd)
+                    cmd="date -u +%s"; cmd | getline now; close(cmd)
+                    if (bt && now) { d=int((now-bt)/86400); h=int(((now-bt)%86400)/3600); m=int(((now-bt)%3600)/60); printf "%dd %dh %dm", d, h, m }
+                    else print "Unknown"
+                }')
+            fi
+        fi
+        echo "${up:-Unknown}"
+        return
+    fi
     local up=$(uptime -p 2>/dev/null | sed 's/^up //')
     [ -z "$up" ] && up=$(awk '{printf "%dd %dh %dm", int($1/86400), int($1%86400/3600), int($1%3600/60)}' /proc/uptime 2>/dev/null)
     echo "${up:-Unknown}"
 }
 
-get_shell() { echo "${SHELL##*/}"; }
+get_shell() {
+    if [ "$IS_WINDOWS" = "1" ]; then
+        echo "${SHELL:-$(cmd /c echo %COMSPEC% 2>/dev/null || echo 'cmd')}"
+        return
+    fi
+    echo "${SHELL##*/}"
+}
 
 get_terminal() {
     if [ "$IS_TERMUX" = "1" ]; then echo "Termux"
+    elif [ -n "$WT_SESSION" ]; then echo "Windows Terminal"
+    elif [ -n "$ConEmuANSI" ]; then echo "ConEmu"
     elif [ -n "$TERM_PROGRAM" ]; then echo "$TERM_PROGRAM"
     elif [ -n "$KITTY_WINDOW_ID" ]; then echo "kitty"
     elif [ -n "$WEZTERM_PANE" ]; then echo "wezterm"
+    elif [ "$IS_WINDOWS" = "1" ]; then echo "Windows ($(basename "$SHELL" 2>/dev/null || echo cmd))"
     else echo "${TERM:-Unknown}"
     fi
 }
