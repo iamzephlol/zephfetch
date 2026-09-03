@@ -249,6 +249,12 @@ rm ~/.local/bin/zephfetch
 rm $PREFIX/bin/zephfetch
 
 
+# If installed on Windows (Git Bash / MSYS2 / Cygwin)
+
+rm ~/.local/bin/zephfetch
+# Or if copied to a different location, remove that path instead
+
+
 # If installed via AUR (when available)
 
 yay -R zephfetch
