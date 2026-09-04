@@ -47,6 +47,12 @@ if [ "$IS_TERMUX" = "0" ] && [ -f /proc/version ] && grep -qi microsoft /proc/ve
     IS_WINDOWS=1
 fi
 
+# NixOS detection (via /etc/os-release ID=nixos)
+IS_NIXOS=0
+if [ "$IS_WINDOWS" = "0" ] && [ -f /etc/os-release ] && . /etc/os-release 2>/dev/null && [ "$ID" = "nixos" ]; then
+    IS_NIXOS=1
+fi
+
 self_update() {
     echo -e "${CYAN}Checking for updates...${RESET}"
     command -v curl &>/dev/null || { echo -e "${RED}curl is required (pkg install curl on Termux)${RESET}"; return 1; }
@@ -425,7 +431,20 @@ get_packages() {
     command -v yum &>/dev/null && ! command -v dnf &>/dev/null && { local c=$(yum list installed 2>/dev/null | wc -l); total=$((total+c)); managers+=("$c (yum)"); }
     command -v zypper &>/dev/null && { local c=$(zypper se --installed-only 2>/dev/null | grep '^i' | wc -l); total=$((total+c)); managers+=("$c (zypper)"); }
     command -v emerge &>/dev/null && { local c=$(qlist -I 2>/dev/null | wc -l); total=$((total+c)); managers+=("$c (portage)"); }
-    command -v nix-env &>/dev/null && { local c=$(nix-env -q 2>/dev/null | wc -l); total=$((total+c)); managers+=("$c (nix)"); }
+    # NixOS system profile: direct references of the current system generation
+    if [ "$IS_NIXOS" = "1" ] && [ -d /run/current-system ] && command -v nix-store &>/dev/null; then
+        local c=$(nix-store -q --references /run/current-system 2>/dev/null | wc -l)
+        total=$((total+c)); managers+=("$c (nixos-system)")
+    fi
+    # Modern nix CLI: nix profile list (replaces nix-env on newer installs)
+    if command -v nix &>/dev/null; then
+        local c=$(nix profile list 2>/dev/null | grep -c '^Name:')
+        total=$((total+c)); managers+=("$c (nix-user)")
+    elif command -v nix-env &>/dev/null; then
+        # Legacy nix-env (nix on non-NixOS, or older user profiles)
+        local c=$(nix-env -q 2>/dev/null | wc -l)
+        total=$((total+c)); managers+=("$c (nix)")
+    fi
     command -v flatpak &>/dev/null && { local c=$(flatpak list --columns=application 2>/dev/null | wc -l); total=$((total+c)); managers+=("$c (flatpak)"); }
     command -v snap &>/dev/null && { local c=$(snap list 2>/dev/null | wc -l); total=$((total+c)); managers+=("$c (snap)"); }
     command -v apk &>/dev/null && { local c=$(apk info 2>/dev/null | wc -l); total=$((total+c)); managers+=("$c (apk)"); }
