@@ -53,6 +53,12 @@ if [ "$IS_WINDOWS" = "0" ] && [ -f /etc/os-release ] && . /etc/os-release 2>/dev
     IS_NIXOS=1
 fi
 
+# macOS detection (via uname -s)
+IS_MACOS=0
+case "$(uname -s)" in
+    Darwin*) IS_MACOS=1 ;;
+esac
+
 self_update() {
     echo -e "${CYAN}Checking for updates...${RESET}"
     command -v curl &>/dev/null || { echo -e "${RED}curl is required (pkg install curl on Termux)${RESET}"; return 1; }
@@ -333,6 +339,10 @@ get_os() {
     if [ "$IS_TERMUX" = "1" ]; then
         local ver=$(getprop ro.build.version.release 2>/dev/null)
         echo "Android ${ver:-'?'} (Termux)"
+    elif [ "$IS_MACOS" = "1" ]; then
+        local os_name=$(sw_vers -productName 2>/dev/null)
+        local os_ver=$(sw_vers -productVersion 2>/dev/null)
+        echo "${os_name:-macOS} ${os_ver:-}"
     elif [ -f /etc/os-release ]; then . /etc/os-release; echo "$PRETTY_NAME"; else uname -s; fi
 }
 
@@ -355,6 +365,7 @@ get_wm() {
         hyprctl -j version 2>/dev/null | grep -oP '"version":\s*"\K[^"]+' | head -1 | xargs -I{} echo "Hyprland {}"
     elif [ -n "$WAYLAND_DISPLAY" ]; then echo "Wayland ($XDG_CURRENT_DESKTOP)"
     elif [ -n "$DISPLAY" ]; then echo "X11 ($XDG_CURRENT_DESKTOP)"
+    elif [ "$IS_MACOS" = "1" ]; then echo "Aqua (macOS)"
     else echo "Unknown"; fi
 }
 
@@ -369,6 +380,10 @@ get_disk() {
         else
             echo "Unknown"
         fi
+        return
+    fi
+    if [ "$IS_MACOS" = "1" ]; then
+        df -h / 2>/dev/null | awk 'NR==2 {printf "%s / %s (%s)", $3, $2, $5}'
         return
     fi
     [ "$IS_TERMUX" = "1" ] && target="$HOME"
@@ -391,6 +406,26 @@ get_memory() {
             local total_gb=$(awk "BEGIN {printf \"%.2f\", $total_kb/1024/1024}")
             local used_gb=$(awk "BEGIN {printf \"%.2f\", $used_kb/1024/1024}")
             local pct=$(awk "BEGIN {printf \"%.0f\", $used_kb/$total_kb*100}")
+            echo "$used_gb GiB / $total_gb GiB ($pct%)"
+        else
+            echo "Unknown"
+        fi
+        return
+    fi
+    if [ "$IS_MACOS" = "1" ]; then
+        local total_bytes=$(sysctl -n hw.memsize 2>/dev/null)
+        if [ -n "$total_bytes" ]; then
+            local vmstat=$(vm_stat 2>/dev/null)
+            local page_size=$(echo "$vmstat" | awk '/page size of/ {gsub(/[^0-9]/,"",$NF); print $NF}')
+            page_size=${page_size:-4096}
+            local active=$(echo "$vmstat" | awk '/Active pages/ {gsub(/[^0-9]/,"",$NF); print $NF}')
+            local wired=$(echo "$vmstat" | awk '/Wired pages/ {gsub(/[^0-9]/,"",$NF); print $NF}')
+            local compressed=$(echo "$vmstat" | awk '/Compressed pages/ {gsub(/[^0-9]/,"",$NF); print $NF}')
+            active=${active:-0}; wired=${wired:-0}; compressed=${compressed:-0}
+            local used_bytes=$(( (active + wired + compressed) * page_size ))
+            local total_gb=$(awk "BEGIN {printf \"%.2f\", $total_bytes/1073741824}")
+            local used_gb=$(awk "BEGIN {printf \"%.2f\", $used_bytes/1073741824}")
+            local pct=$(awk "BEGIN {printf \"%.0f\", $used_bytes/$total_bytes*100}")
             echo "$used_gb GiB / $total_gb GiB ($pct%)"
         else
             echo "Unknown"
@@ -449,6 +484,15 @@ get_packages() {
     command -v snap &>/dev/null && { local c=$(snap list 2>/dev/null | wc -l); total=$((total+c)); managers+=("$c (snap)"); }
     command -v apk &>/dev/null && { local c=$(apk info 2>/dev/null | wc -l); total=$((total+c)); managers+=("$c (apk)"); }
     command -v xbps-query &>/dev/null && { local c=$(xbps-query -l 2>/dev/null | wc -l); total=$((total+c)); managers+=("$c (xbps)"); }
+    command -v brew &>/dev/null && { local c=$(( $(brew list --formula 2>/dev/null | wc -l) + $(brew list --cask 2>/dev/null | wc -l) )); total=$((total+c)); managers+=("$c (brew)"); }
+    command -v port &>/dev/null && { local c=$(port installed 2>/dev/null | wc -l); total=$((total+c)); managers+=("$c (port)"); }
+    command -v eopkg &>/dev/null && { local c=$(eopkg list - installed 2>/dev/null | wc -l); total=$((total+c)); managers+=("$c (eopkg)"); }
+    command -v guix &>/dev/null && { local c=$(guix package 2>/dev/null | grep -cE '^\s+\S'); total=$((total+c)); managers+=("$c (guix)"); }
+    command -v pkg &>/dev/null && { local c=$(pkg info 2>/dev/null | wc -l); total=$((total+c)); managers+=("$c (pkg)"); }
+    command -v cargo &>/dev/null && { local c=$(cargo install --list 2>/dev/null | wc -l); total=$((total+c)); managers+=("$c (cargo)"); }
+    command -v gem &>/dev/null && { local c=$(gem list 2>/dev/null | wc -l); total=$((total+c)); managers+=("$c (gem)"); }
+    command -v npm &>/dev/null && { local c=$(npm list -g --depth=0 2>/dev/null | wc -l); total=$((total+c)); managers+=("$c (npm)"); }
+    command -v pip &>/dev/null && { local c=$(pip list 2>/dev/null | wc -l); total=$((total+c)); managers+=("$c (pip)"); }
     [ ${#managers[@]} -eq 0 ] && echo "Unknown" || echo "$total total (${managers[*]})"
 }
 
@@ -470,6 +514,9 @@ get_host() {
         local brand=$(getprop ro.product.brand 2>/dev/null) model=$(getprop ro.product.model 2>/dev/null)
         [ -n "$brand" ] && [ -n "$model" ] && host="$brand $model"
         [ -z "$host" ] && host="$brand$model"
+    elif [ "$IS_MACOS" = "1" ]; then
+        host=$(system_profiler SPHardwareDataType 2>/dev/null | grep "Model Name" | sed 's/.*: //')
+        [ -z "$host" ] && host=$(sysctl -n hw.machine 2>/dev/null)
     fi
     [ -z "$host" ] && [ -r /sys/devices/virtual/dmi/id/product_name ] && host=$(cat /sys/devices/virtual/dmi/id/product_name 2>/dev/null)
     [ -z "$host" ] && [ -r /proc/device-tree/model ] && host=$(tr -d '\0' < /proc/device-tree/model 2>/dev/null)
@@ -477,6 +524,12 @@ get_host() {
 }
 
 get_resolution() {
+    if [ "$IS_MACOS" = "1" ]; then
+        local res=$(system_profiler SPDisplaysDataType 2>/dev/null | grep -A1 "Resolution" | tail -1 | grep -oE '[0-9]+ x [0-9]+' | tr -d ' ')
+        [ -z "$res" ] && res=$(system_profiler SPDisplaysDataType 2>/dev/null | grep -oE '[0-9]+ x [0-9]+' | head -1 | tr -d ' ')
+        echo "${res:-Unknown}"
+        return
+    fi
     if [ "$IS_WINDOWS" = "1" ]; then
         local res=""
         if command -v wmic &>/dev/null; then
@@ -502,6 +555,12 @@ get_resolution() {
 
 get_cpu() {
     local cpu=""
+    if [ "$IS_MACOS" = "1" ]; then
+        cpu=$(sysctl -n machdep.cpu.brand_string 2>/dev/null)
+        [ -z "$cpu" ] && cpu=$(system_profiler SPHardwareDataType 2>/dev/null | grep "Processor Name" | sed 's/.*: //')
+        echo "${cpu:-$(uname -m)}"
+        return
+    fi
     if [ "$IS_WINDOWS" = "1" ]; then
         cpu=$(run_powershell '(Get-CimInstance Win32_Processor).Name')
         if [ -z "$cpu" ]; then
@@ -534,6 +593,12 @@ get_gpu() {
         echo "${gpu:-Unknown}"
         return
     fi
+    if [ "$IS_MACOS" = "1" ]; then
+        local gpu=$(system_profiler SPDisplaysDataType 2>/dev/null | grep -A1 "Graphics/Display" | tail -1 | sed 's/.*: //; s/^[[:space:]]*//')
+        [ -z "$gpu" ] && gpu=$(system_profiler SPDisplaysDataType 2>/dev/null | grep "Chipset" | head -1 | sed 's/.*: //; s/^[[:space:]]*//')
+        echo "${gpu:-Unknown}"
+        return
+    fi
     if [ "$IS_TERMUX" = "1" ]; then
         case $(getprop ro.hardware.egl 2>/dev/null) in
             adreno) echo "Qualcomm Adreno"; return ;;
@@ -560,6 +625,24 @@ get_swap() {
         fi
         return
     fi
+    if [ "$IS_MACOS" = "1" ]; then
+        local swap_info=$(sysctl -n vm.swapusage 2>/dev/null)
+        if [ -n "$swap_info" ]; then
+            local swap_total=$(echo "$swap_info" | awk '{print $2}' | tr -d 'M')
+            local swap_used=$(echo "$swap_info" | awk '{print $4}' | tr -d 'M')
+            if [ "${swap_total:-0}" -gt 0 ] 2>/dev/null; then
+                local used_gb=$(awk "BEGIN {printf \"%.2f\", $swap_used/1024}")
+                local total_gb=$(awk "BEGIN {printf \"%.2f\", $swap_total/1024}")
+                local pct=$(awk "BEGIN {printf \"%.0f\", $swap_used/$swap_total*100}")
+                echo "$used_gb GiB / $total_gb GiB ($pct%)"
+            else
+                echo "None"
+            fi
+        else
+            echo "None"
+        fi
+        return
+    fi
     if command -v free &>/dev/null; then
         free -b 2>/dev/null | awk 'NR==3 {if ($2 > 0) printf "%.2f GiB / %.2f GiB (%.0f%%)", $3/1073741824, $2/1073741824, $3/$2*100; else print "None"}'
     else
@@ -568,6 +651,11 @@ get_swap() {
 }
 
 get_uptime() {
+    if [ "$IS_MACOS" = "1" ]; then
+        local up=$(uptime 2>/dev/null | sed 's/^up //; s/,.*//')
+        echo "${up:-Unknown}"
+        return
+    fi
     if [ "$IS_WINDOWS" = "1" ]; then
         local up=""
         if command -v wmic &>/dev/null; then
