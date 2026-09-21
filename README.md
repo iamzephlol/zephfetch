@@ -179,17 +179,22 @@ zephfetch automatically counts packages from whatever is installed on your syste
 ## Example Output (default: thm4 clean)
 
 ```
-──────────────────────────────────────────────────
-  user     zeph
-──────────────────────────────────────────────────
-  kernel   7.2.2-arch1-1
-  os       Arch Linux
-──────────────────────────────────────────────────
-  wm       Hyprland 0.56.2
-  disk     78G / 457G (18%)
-  memory   1.29 GiB / 7.69 GiB (17%)
-  pkgs     1102 total (1088 (pacman) 14 (flatpak))
-──────────────────────────────────────────────────
+     A.,.A
+     (u u )\=-=-__---===-.         \
+     `.,,'  ,     (    `-.      /  `.-~~--..--~~~-.
+   /~/~~~~~ /...;/~~~~~  (``.    <__               `.
+   """"~~~~~~~~~~""~~~~~~~,','~~~~~~~~~~~~~~~~.~~~~,','
+                          "`                 `._,'
+
+  󰣇 user: zeph
+  ────────────────────────────────────────
+  󰌛 kernel: 7.2.2-arch1-1
+  󰌽 os: Arch Linux
+  ────────────────────────────────────────
+  󰒺 wm: Hyprland 0.56.2
+  󰋊 disk: 79G / 457G (19%)
+  󰍛 memory: 2.01 GiB / 7.69 GiB (26%)
+  󰏖 pkgs: 1274 total (1156 (pacman) 18 (flatpak) 2 (cargo) 5 (npm) 93 (pip))
 ```
 
 ## Customization
