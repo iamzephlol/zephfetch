@@ -1,134 +1,138 @@
 # zephfetch
 
-
-A minimal, fast system info fetch tool written in Bash with random cat ASCII art.
-  ```if you hate fastfetch then this is your way to go! it has cute ascii arts and its 100% better than fastfetch```
-
-
+Minimal system info fetch with random cat ASCII art — works on **every distro**, **macOS**, **Windows**, and **Android**.
 
 ## Features
 
-
-- **Fast** - Pure bash, no dependencies (except standard coreutils)
-
-- **Random cat ASCII art** - Different cat every run (4 variants)
-
-- **Nerd Font icons** - Clean icons for each info field
-
-- **Minimal** - Shows: user, kernel, OS, window manager, disk, memory, packages
-
-- **Extended info** - `zephfetch -mi` also shows host, resolution, CPU, GPU, swap, shell, terminal and uptime
-
-- **Android support** - Works in Termux: shows device model, SoC, GPU, screen size and package count
-
-- **Windows support** - Works in Git Bash, MSYS2, Cygwin and WSL via built-in PowerShell/wmic fallbacks
-
-- **No config needed** - Just run and go
-
-
-## Requirements
-
-
-- Bash
-
-- Standard coreutils (`df`, `free`, `uname`, `cat`, `awk`, `grep`)
-
-- `pacman` and/or `flatpak` for package counts (Arch-based)
-
-- A [Nerd Font](https://www.nerdfonts.com/) for icons (optional but recommended)
-
+- **Works everywhere** — Linux, macOS, Windows CMD/PowerShell, Git Bash, MSYS2, Cygwin, WSL, Termux, NixOS
+- **27+ package managers** — pacman, apt, dnf, yum, zypper, emerge, nix, flatpak, snap, apk, xbps, brew, port, eopkg, guix, pkg, cargo, gem, npm, pip, winget, choco
+- **12 random cat ASCII art** variants on every run
+- **10 themed layouts** — box, side, tree, clean, card, vertical, dots, retro, json, compact
+- **Animated GIF/WebP** image display via chafa
+- **Extended info** (`-mi`) — host, resolution, CPU, GPU, swap, shell, terminal, uptime
+- **Self-update** from GitHub (`--update`)
+- **No config needed** — just run and go
 
 ## Installation
 
-
+### Universal (any platform)
 ```bash
-
-# Clone or copy the script
-
 curl -o ~/.local/bin/zephfetch https://raw.githubusercontent.com/iamzephlol/zephfetch/main/zephfetch
-
 chmod +x ~/.local/bin/zephfetch
-
-
-# Make sure ~/.local/bin is in your PATH
-
-export PATH="$HOME/.local/bin:$PATH"
-
 ```
 
+### Linux
 
-## Android (Termux)
-
-
-zephfetch works on Android via [Termux](https://termux.dev) and shows real device info (model, SoC, GPU driver, dpkg package count):
-
+**Arch Linux (AUR):**
 ```bash
+yay -S zephfetch
+```
 
-pkg install curl -y
+**Debian / Ubuntu / Linux Mint / Pop!_OS:**
+```bash
+sudo apt install curl git
+curl -o ~/.local/bin/zephfetch https://raw.githubusercontent.com/iamzephlol/zephfetch/main/zephfetch
+chmod +x ~/.local/bin/zephfetch
+```
 
+**Fedora / RHEL / CentOS:**
+```bash
+sudo dnf install curl git
+curl -o ~/.local/bin/zephfetch https://raw.githubusercontent.com/iamzephlol/zephfetch/main/zephfetch
+chmod +x ~/.local/bin/zephfetch
+```
+
+**openSUSE / SUSE:**
+```bash
+sudo zypper install curl git
+curl -o ~/.local/bin/zephfetch https://raw.githubusercontent.com/iamzephlol/zephfetch/main/zephfetch
+chmod +x ~/.local/bin/zephfetch
+```
+
+**Gentoo:**
+```bash
+sudo emerge git curl
+curl -o ~/.local/bin/zephfetch https://raw.githubusercontent.com/iamzephlol/zephfetch/main/zephfetch
+chmod +x ~/.local/bin/zephfetch
+```
+
+**Alpine Linux:**
+```bash
+sudo apk add curl
+curl -o ~/.local/bin/zephfetch https://raw.githubusercontent.com/iamzephlol/zephfetch/main/zephfetch
+chmod +x ~/.local/bin/zephfetch
+```
+
+**Void Linux:**
+```bash
+sudo xbps-install -Sy curl
+curl -o ~/.local/bin/zephfetch https://raw.githubusercontent.com/iamzephlol/zephfetch/main/zephfetch
+chmod +x ~/.local/bin/zephfetch
+```
+
+**NixOS:**
+```bash
+nix-shell -p curl --run 'curl -o ~/.local/bin/zephfetch https://raw.githubusercontent.com/iamzephlol/zephfetch/main/zephfetch && chmod +x ~/.local/bin/zephfetch'
+```
+
+**Termux / Android:**
+```bash
+pkg update && pkg install curl
 curl -o $PREFIX/bin/zephfetch https://raw.githubusercontent.com/iamzephlol/zephfetch/main/zephfetch
-
 chmod +x $PREFIX/bin/zephfetch
-
 ```
 
-- `$PREFIX/bin` is already in Termux's PATH - no extra config needed
-- `--image` renders with colored block characters in Termux (`pkg install chafa` for it)
-- If launching directly fails on older Termux setups, run it with `bash zephfetch`
-
-
-## Windows
-
-Zephfetch works natively on Windows via **Git Bash**, **MSYS2**, **Cygwin**, and **WSL**. All system-info functions automatically fall back to `wmic` or PowerShell when Linux tools aren't available.
-
-### Install
-
+### macOS
 ```bash
-# Clone and install manually
-git clone https://github.com/iamzephlol/zephfetch.git
-cd zephfetch
-cp zephfetch ~/.local/bin/
+brew install curl
+curl -o ~/.local/bin/zephfetch https://raw.githubusercontent.com/iamzephlol/zephfetch/main/zephfetch
 chmod +x ~/.local/bin/zephfetch
 ```
 
-- If `~/.local/bin` isn't in your PATH, add it: `setx PATH "%PATH%;%USERPROFILE%\.local\bin"`
-- **PowerShell** is required for extended info on Windows (ships with Windows 10/11 by default)
-- **chafa** via MSYS2 (`pacman -S chafa`) enables inline image/GIF rendering
-- ANSI colors work in **Windows Terminal**, **Git Bash**, and **MSYS2**
+### Windows
 
-### Usage (same as everywhere)
-
-```bash
-zephfetch
-zephfetch -mi          # extended info
-zephfetch --image cat.gif
-zephfetch --theme side
-zephfetch --list-themes
+**Command Prompt / PowerShell (native):**
+```powershell
+powershell -Command "Invoke-WebRequest -Uri https://raw.githubusercontent.com/iamzephlol/zephfetch/main/zephfetch -OutFile $env:USERPROFILE\.local\bin\zephfetch"
 ```
+- Add `$env:USERPROFILE\.local\bin` to your PATH if not already there
+- PowerShell ships with Windows 10/11 by default
+- For extended info, `pwsh` (PowerShell 7) is recommended
 
-Supported on all 10 themes, image display, and self-update (`--update`).
-
+**Git Bash / MSYS2 / Cygwin:**
+```bash
+curl -o ~/.local/bin/zephfetch https://raw.githubusercontent.com/iamzephlol/zephfetch/main/zephfetch
+chmod +x ~/.local/bin/zephfetch
+```
 
 ## Usage
 
-
 ```bash
-
-zephfetch
-
-# Display custom image or animated GIF (full quality with graphics protocols)
-zephfetch --image /path/to/image.png
-zephfetch --image ~/Pictures/cat.jpg
-zephfetch --image ~/Pictures/dancing_cat.gif
-
-# Show extended system info
-zephfetch -mi
-zephfetch -t box -mi
-
-# Show help
-zephfetch --help
-
+zephfetch                  # basic output
+zephfetch -mi              # extended info (host, res, cpu, gpu, swap, shell, term, uptime)
+zephfetch --image cat.gif  # display animated GIF
+zephfetch --theme side     # switch layout
+zephfetch --list-themes    # list all themes
+zephfetch --update         # self-update from GitHub
+zephfetch --help           # show help
 ```
+
+### Themes
+
+| Theme | Style | Description |
+|-------|-------|-------------|
+| **thm4** clean | Lines | Default — clean horizontal separators |
+| thm1 classic | Box | Original boxed layout |
+| thm2 side | Columns | Two-column layout |
+| thm3 tree | Tree | Branch/indent style |
+| thm5 card | Panel | Rounded card panel |
+| thm6 vertical | List | Icons left, values right |
+| thm7 dots | Minimal | Dot separators |
+| thm8 retro | Retro | UPPERCASE labels |
+| thm9 json | Raw | JSON-like output |
+| thm10 compact | One-line | Ultra compact |
+
+**Quick switch:** `zephfetch --thm4`, `zephfetch -t clean`
 
 ### Image & GIF Support
 
@@ -145,132 +149,66 @@ Full-quality rendering uses terminal graphics protocols. Animated formats (GIF, 
 **Requires:** `chafa` (install: `pacman -S chafa` / `apt install chafa` / `dnf install chafa`)
 
 GIF playback duration is configurable via environment variable:
-
 ```bash
 ZEPHFETCH_GIF_DURATION=5 zephfetch --image cat.gif   # play 5 seconds
 ```
 
-Works from **any shell** (bash, zsh, fish, nushell) - the script uses `#!/bin/bash` shebang.
+Works from **any shell** (bash, zsh, fish, nushell) — the script uses `#!/bin/bash`.
 
+### Package Managers Detected
 
-## Themes
+zephfetch automatically counts packages from whatever is installed on your system:
 
-10 completely different layout styles:
+| Platform | Detected managers |
+|----------|-------------------|
+| Arch | pacman, flatpak, nix, snap |
+| Debian/Ubuntu | apt, flatpak, snap, nix |
+| Fedora | dnf, flatpak, snap |
+| openSUSE | zypper, flatpak, snap |
+| macOS | brew, port, npm, pip, cargo, gem |
+| Windows | winget, choco, pip, npm, port |
+| Termux | dpkg |
+| NixOS | nix (system + user) |
+| Alpine | apk |
+| Void | xbps |
+| Gentoo | portage (emerge) |
+| Solus | eopkg |
+| Guix | guix |
+| FreeBSD | pkg |
 
-```bash
-zephfetch --list-themes          # List all themes
-zephfetch --theme thm1           # Classic box (default)
-zephfetch --theme thm2           # Side-by-side columns
-zephfetch --theme thm3           # Tree/branch style
-zephfetch --theme thm4           # Clean horizontal separators
-zephfetch --theme thm5           # Card/panel with rounded corners
-zephfetch --theme thm6           # Vertical list
-zephfetch --theme thm7           # Minimal with dot separators
-zephfetch --theme thm8           # Retro terminal style
-zephfetch --theme thm9           # JSON-like output
-zephfetch --theme thm10          # Compact single line
-
-# Short aliases
-# Short aliases
-zephfetch -t side
-zephfetch -t tree
-zephfetch -t minimal
-zephfetch -t retro
-zephfetch -t json
-zephfetch -t compact
-
-# Direct theme flags (combine with anything, e.g. -mi)
-zephfetch --thm1
-zephfetch --thm5 -mi
-```
-
-| Theme | Style | Description |
-|-------|-------|-------------|
-| **thm1** classic | Box | Original boxed layout |
-| **thm2** side | Columns | Two-column layout |
-| **thm3** tree | Tree | Branch/indent style |
-| **thm4** clean | Lines | Horizontal separators |
-| **thm5** card | Panel | Rounded card panel |
-| **thm6** vertical | List | Icons left, values right |
-| **thm7** dots | Minimal | Dot separators |
-| **thm8** retro | Retro | UPPERCASE labels |
-| **thm9** json | Raw | JSON-like output |
-| **thm10** compact | One-line | Ultra compact |
-
-
-## Example Output
-
+## Example Output (default: thm4 clean)
 
 ```
-₊˚⊹∧＿∧         ｡
-  (  ̳ᴗ  ̫ ᴗ ̳)       ♡ ｡
-  ノ    つつ     *.+ﾟ𝒇𝒐𝒓 𝒚𝒐𝒖.♡
- ⊂、  ノ        ♡.    ｡
-   し′        ｡・
- """"""""""""""""""""""
-
-  ╭─zeph@zeph─╮
-  │  󰣇 user     zeph
-  │  󰌛 kernel   7.1.8-arch1-3
-  │  󰌽 os       Arch Linux
-  │  󰒺 wm       Hyprland 0.56.2
-  │  󰋊 disk     55G / 457G (13%)
-  │  󰍛 memory   2.03 GiB / 7.69 GiB (26%)
-  │  󰏖 pkgs     1102 total (1088 (pacman) 14 (flatpak))
-  ╰────────────╯
+──────────────────────────────────────────────────
+  user     zeph
+──────────────────────────────────────────────────
+  kernel   7.2.2-arch1-1
+  os       Arch Linux
+──────────────────────────────────────────────────
+  wm       Hyprland 0.56.2
+  disk     78G / 457G (18%)
+  memory   1.29 GiB / 7.69 GiB (17%)
+  pkgs     1102 total (1088 (pacman) 14 (flatpak))
+──────────────────────────────────────────────────
 ```
-
 
 ## Customization
 
-
 Edit the script directly to:
-
 - Add/remove info fields
-
 - Change colors
-
 - Add more cat ASCII art
-
 - Modify package managers detected
-
 
 ## Uninstall
 
-
 ```bash
-
-# If installed via curl/manual copy
-
-rm ~/.local/bin/zephfetch
-
-# If installed on Android via Termux
-
-rm $PREFIX/bin/zephfetch
-
-
-# If installed on Windows (Git Bash / MSYS2 / Cygwin)
-
-rm ~/.local/bin/zephfetch
-# Or if copied to a different location, remove that path instead
-
-
-# If installed via AUR (when available)
-
-yay -R zephfetch
-
-# or
-
-pacman -R zephfetch
-
-
-# If installed via AUR git version
-
-yay -R zephfetch-git
-
+rm ~/.local/bin/zephfetch          # Linux/macOS/Git Bash
+rm $PREFIX/bin/zephfetch           # Termux
+rm $env:USERPROFILE\.local\bin\zephfetch  # Windows CMD/PowerShell
+yay -R zephfetch                   # AUR
 ```
 
 ## License
 
-
-MIT License - see [LICENSE](LICENSE) for details. 
+MIT License - see [LICENSE](LICENSE) for details.

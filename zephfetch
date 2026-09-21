@@ -23,7 +23,7 @@ DIM='\033[2m'
 
 # Global config lol
 CUSTOM_IMAGE=""
-THEME="default"
+THEME="thm4"
 MORE_INFO="0"
 
 # GitHub raw URL for self-update
