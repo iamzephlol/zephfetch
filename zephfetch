@@ -29,19 +29,57 @@ MORE_INFO="0"
 # GitHub raw URL for self-update
 ZEPHFETCH_RAW="https://raw.githubusercontent.com/iamzephlol/zephfetch/main/zephfetch"
 
+# Tool availability cache
+declare -gA _HAS_CACHE=()
+
+# Check if a tool exists (cached)
+HAS() {
+    local tool=$1
+    if [[ -z ${_HAS_CACHE[$tool]:-} ]]; then
+        command -v "$tool" &>/dev/null && _HAS_CACHE[$tool]=1 || _HAS_CACHE[$tool]=0
+    fi
+    [[ ${_HAS_CACHE[$tool]} -eq 1 ]]
+}
+
+# PowerShell result cache (Windows only)
+declare -gA _PS_CACHE=()
+
+# Run a PowerShell command with caching (fallback to powershell.exe or pwsh)
+# Usage: run_powershell "command"
+run_powershell() {
+    # If result is cached, return it
+    [[ -n ${_PS_CACHE[$1]:-} ]] && { printf '%s' "${_PS_CACHE[$1]}"; return 0; }
+
+    local cmd="$1"
+    local out=""
+    if HAS pwsh; then
+        out=$(pwsh -NoProfile -Command "$cmd" 2>/dev/null)
+    elif HAS powershell.exe; then
+        out=$(powershell.exe -NoProfile -Command "$cmd" 2>/dev/null)
+    elif HAS powershell; then
+        out=$(powershell -NoProfile -Command "$cmd" 2>/dev/null)
+    else
+        return 1
+    fi
+
+    # Trim trailing CR/LF noise that PowerShell adds; take first non-empty line, trim trailing whitespace
+    out=$(printf '%s' "$out" | tr -d '\r' | awk 'NF{$1=$1; print; exit}')
+
+    # Cache result
+    _PS_CACHE[$1]="$out"
+    printf '%s' "$out"
+}
+
 # Termux/Android detection (TERMUX_VERSION is exported by the Termux app itself)
 IS_TERMUX=0
 [ -n "$TERMUX_VERSION" ] && IS_TERMUX=1
 
 # Windows detection (MSYS2, Cygwin, Git Bash, WSL with Windows host)
 IS_WINDOWS=0
-IS_MSYS=0
-IS_CYGWIN=0
 case "$(uname -s)" in
     MINGW*|MSYS*|CYGWIN*) IS_WINDOWS=1 ;;
 esac
-[ -n "$MSYSTEM" ] && IS_MSYS=1
-[ "$IS_WINDOWS" = "1" ] && case "$(uname -s)" in CYGWIN*) IS_CYGWIN=1 ;; esac
+[ -n "$MSYSTEM" ] && IS_WINDOWS=1
 # Detect Windows host under WSL
 if [ "$IS_TERMUX" = "0" ] && [ -f /proc/version ] && grep -qi microsoft /proc/version 2>/dev/null; then
     IS_WINDOWS=1
@@ -61,7 +99,7 @@ esac
 
 self_update() {
     echo -e "${CYAN}Checking for updates...${RESET}"
-    command -v curl &>/dev/null || { echo -e "${RED}curl is required (pkg install curl on Termux)${RESET}"; return 1; }
+    HAS curl || { echo -e "${RED}curl is required (pkg install curl on Termux)${RESET}"; return 1; }
     local current_hash=$(sha256sum "$0" 2>/dev/null | cut -d' ' -f1)
     local temp_file=$(mktemp)
     if ! curl -fsSL "$ZEPHFETCH_RAW" -o "$temp_file" 2>/dev/null; then
@@ -120,31 +158,13 @@ list_themes() {
     echo "  thm10, compact, one     - Compact single line"
 }
 
-# Run a PowerShell command, falling back to powershell.exe or pwsh.
-# Prints nothing on failure; the caller must handle empty output.
-run_powershell() {
-    local cmd="$1"
-    local out=""
-    if command -v pwsh &>/dev/null; then
-        out=$(pwsh -NoProfile -Command "$cmd" 2>/dev/null)
-    elif command -v powershell.exe &>/dev/null; then
-        out=$(powershell.exe -NoProfile -Command "$cmd" 2>/dev/null)
-    elif command -v powershell &>/dev/null; then
-        out=$(powershell -NoProfile -Command "$cmd" 2>/dev/null)
-    else
-        return 1
-    fi
-    # Trim trailing CR/LF noise that PowerShell adds; take first non-empty line, trim trailing whitespace
-    printf '%s' "$out" | tr -d '\r' | awk 'NF{$1=$1; print; exit}'
-}
-
 # Render image via chafa (graphics protocols); GIF/WebP/APNG animate for ZEPHFETCH_GIF_DURATION secs (default 3)
 display_image() {
     local image_path="$1"
     [ ! -f "$image_path" ] && { echo -e "${RED}Image not found: $image_path${RESET}"; return 1; }
 
     local animated=0 mime=""
-    command -v file &>/dev/null && mime=$(file --brief --mime-type "$image_path" 2>/dev/null)
+    HAS file &>/dev/null && mime=$(file --brief --mime-type "$image_path" 2>/dev/null)
     case "$mime" in
         image/gif|image/webp|image/apng|image/avif|image/jxl) animated=1 ;;
         *)
@@ -153,14 +173,14 @@ display_image() {
             esac ;;
     esac
 
-    if command -v chafa &>/dev/null; then
+    if HAS chafa; then
         local dur=()
         [ $animated -eq 1 ] && dur=(-d "${ZEPHFETCH_GIF_DURATION:-3}")
         if [ "$IS_TERMUX" = "1" ]; then
             chafa "${dur[@]}" --symbols=block+space --color-space=rgb --dither=none "$image_path"
         elif [ -n "$KITTY_WINDOW_ID" ] || [ "$TERM" = "xterm-kitty" ]; then
             # kitty icat animates natively at full quality
-            if [ $animated -eq 1 ] && command -v kitty &>/dev/null; then
+            if [ $animated -eq 1 ] && HAS kitty &>/dev/null; then
                 kitty +kitten icat "$image_path" && return 0
             fi
             chafa "${dur[@]}" --format=kitty "$image_path" 2>/dev/null || chafa --format=kitty "$image_path"
@@ -178,15 +198,15 @@ display_image() {
                 || chafa --format=kitty "$image_path" 2>/dev/null \
                 || chafa --symbols=block+space --color-space=rgb --dither=none "$image_path"
         fi
-    elif command -v timg &>/dev/null; then
+    elif HAS timg &>/dev/null; then
         timeout 6 timg "$image_path" 2>/dev/null || true
-    elif command -v kitty &>/dev/null && [ -n "$KITTY_WINDOW_ID" ]; then
+    elif HAS kitty &>/dev/null && [ -n "$KITTY_WINDOW_ID" ]; then
         kitty +kitten icat "$image_path"
-    elif [ "$IS_WINDOWS" = "1" ] && command -v chafa.exe &>/dev/null; then
+    elif [ "$IS_WINDOWS" = "1" ] && HAS chafa.exe; then
         chafa.exe "${dur[@]}" --symbols=block+space --color-space=rgb --dither=none "$image_path" 2>/dev/null \
             || chafa.exe "${dur[@]}" --format=sixels "$image_path" 2>/dev/null \
             || chafa.exe --symbols=block+space --color-space=rgb --dither=none "$image_path" 2>/dev/null
-    elif [ "$IS_WINDOWS" = "1" ] && command -v powershell.exe &>/dev/null; then
+    elif [ "$IS_WINDOWS" = "1" ] && HAS powershell.exe; then
         echo -e "${YELLOW}Image: $image_path${RESET}"
         echo -e "${DIM}Install 'chafa' via MSYS2 ('pacman -S chafa') for inline image display.${RESET}"
     else
@@ -348,12 +368,12 @@ get_os() {
 
 get_wm() {
     if [ "$IS_WINDOWS" = "1" ]; then
-        if command -v wmic &>/dev/null; then
+        if HAS wmic &>/dev/null; then
             local dwm=$(wmic process where "name='dwm.exe'" get Name /value 2>/dev/null | grep -iE 'name=' | head -n1 | cut -d= -f2-)
             [ -n "$dwm" ] && { echo "Desktop Window Manager (Windows)"; return; }
         fi
         # Fallback: detect common Windows desktop shells
-        if command -v powershell.exe &>/dev/null || command -v pwsh &>/dev/null || command -v powershell &>/dev/null; then
+        if HAS powershell.exe || HAS pwsh || HAS powershell; then
             echo "Windows Desktop (Explorer)"
         else
             echo "Windows"
@@ -392,7 +412,7 @@ get_disk() {
 get_memory() {
     if [ "$IS_WINDOWS" = "1" ]; then
         local total_kb free_kb
-        if command -v wmic &>/dev/null; then
+        if HAS wmic &>/dev/null; then
             total_kb=$(wmic OS get TotalVisibleMemorySize /value 2>/dev/null | grep -iE 'totalvisiblememorysize=' | head -n1 | cut -d= -f2)
             free_kb=$(wmic OS get FreePhysicalMemory /value 2>/dev/null | grep -iE 'freephysicalmemory=' | head -n1 | cut -d= -f2)
         else
@@ -432,7 +452,7 @@ get_memory() {
         fi
         return
     fi
-    if command -v free &>/dev/null; then
+    if HAS free; then
         free -b | awk 'NR==2 {printf "%.2f GiB / %.2f GiB (%.0f%%)", $3/1024/1024/1024, $2/1024/1024/1024, $3/$2*100}'
     else
         awk '/^MemTotal/ {t=$2} /^MemAvailable/ {a=$2} END {u=t-a; printf "%.2f GiB / %.2f GiB (%.0f%%)", u/1048576, t/1048576, u/t*100}' /proc/meminfo 2>/dev/null
@@ -444,10 +464,10 @@ get_packages() {
     local total=0 managers=()
     if [ "$IS_WINDOWS" = "1" ]; then
         local c=0 mgr=""
-        command -v winget &>/dev/null && { c=$(winget list 2>/dev/null | grep -cE '^[A-Za-z]' || echo 0); mgr="winget"; }
-        command -v pip &>/dev/null && { local pc=$(pip list 2>/dev/null | grep -cE '^[A-Za-z]' || echo 0); c=$((c + pc)); mgr="$mgr pip"; }
-        command -v npm &>/dev/null && { local nc=$(npm list -g --depth=0 2>/dev/null | grep -cE '├─|└─' || echo 0); c=$((c + nc)); mgr="$mgr npm"; }
-        command -v choco &>/dev/null && { local cc=$(choco list --local-only 2>/dev/null | grep -cE '^\S' || echo 0); c=$((c + cc)); mgr="$mgr choco"; }
+        HAS winget &>/dev/null && { c=$(winget list 2>/dev/null | grep -cE '^[A-Za-z]' || echo 0); mgr="winget"; }
+        HAS pip &>/dev/null && { local pc=$(pip list 2>/dev/null | grep -cE '^[A-Za-z]' || echo 0); c=$((c + pc)); mgr="$mgr pip"; }
+        HAS npm && { local nc=$(npm list -g --depth=0 2>/dev/null | grep -cE '├─|└─' || echo 0); c=$((c + nc)); mgr="$mgr npm"; }
+        HAS choco && { local cc=$(choco list --local-only 2>/dev/null | grep -cE '^\S' || echo 0); c=$((c + cc)); mgr="$mgr choco"; }
         if [ "$c" -gt 0 ] 2>/dev/null; then
             echo "${c} total (${mgr:-unknown})"
         else
@@ -460,39 +480,39 @@ get_packages() {
         echo "${c:-0} total (dpkg)"
         return
     fi
-    command -v pacman &>/dev/null && { local c=$(pacman -Q 2>/dev/null | wc -l); total=$((total+c)); managers+=("$c (pacman)"); }
-    command -v apt &>/dev/null && { local c=$(apt list --installed 2>/dev/null | wc -l); total=$((total+c)); managers+=("$c (apt)"); }
-    command -v dnf &>/dev/null && { local c=$(dnf list installed 2>/dev/null | wc -l); total=$((total+c)); managers+=("$c (dnf)"); }
-    command -v yum &>/dev/null && ! command -v dnf &>/dev/null && { local c=$(yum list installed 2>/dev/null | wc -l); total=$((total+c)); managers+=("$c (yum)"); }
-    command -v zypper &>/dev/null && { local c=$(zypper se --installed-only 2>/dev/null | grep '^i' | wc -l); total=$((total+c)); managers+=("$c (zypper)"); }
-    command -v emerge &>/dev/null && { local c=$(qlist -I 2>/dev/null | wc -l); total=$((total+c)); managers+=("$c (portage)"); }
+    HAS pacman && { local c=$(pacman -Q 2>/dev/null | wc -l); total=$((total+c)); managers+=("$c (pacman)"); }
+    HAS apt && { local c=$(apt list --installed 2>/dev/null | wc -l); total=$((total+c)); managers+=("$c (apt)"); }
+    HAS dnf && { local c=$(dnf list installed 2>/dev/null | wc -l); total=$((total+c)); managers+=("$c (dnf)"); }
+    HAS yum && ! HAS dnf && { local c=$(yum list installed 2>/dev/null | wc -l); total=$((total+c)); managers+=("$c (yum)"); }
+    HAS zypper && { local c=$(zypper se --installed-only 2>/dev/null | grep '^i' | wc -l); total=$((total+c)); managers+=("$c (zypper)"); }
+    HAS emerge && { local c=$(qlist -I 2>/dev/null | wc -l); total=$((total+c)); managers+=("$c (portage)"); }
     # NixOS system profile: direct references of the current system generation
-    if [ "$IS_NIXOS" = "1" ] && [ -d /run/current-system ] && command -v nix-store &>/dev/null; then
+    if [ "$IS_NIXOS" = "1" ] && [ -d /run/current-system ] && HAS nix-store &>/dev/null; then
         local c=$(nix-store -q --references /run/current-system 2>/dev/null | wc -l)
         total=$((total+c)); managers+=("$c (nixos-system)")
     fi
     # Modern nix CLI: nix profile list (replaces nix-env on newer installs)
-    if command -v nix &>/dev/null; then
+    if HAS nix &>/dev/null; then
         local c=$(nix profile list 2>/dev/null | grep -c '^Name:')
         total=$((total+c)); managers+=("$c (nix-user)")
-    elif command -v nix-env &>/dev/null; then
+    elif HAS nix-env &>/dev/null; then
         # Legacy nix-env (nix on non-NixOS, or older user profiles)
         local c=$(nix-env -q 2>/dev/null | wc -l)
         total=$((total+c)); managers+=("$c (nix)")
     fi
-    command -v flatpak &>/dev/null && { local c=$(flatpak list --columns=application 2>/dev/null | wc -l); total=$((total+c)); managers+=("$c (flatpak)"); }
-    command -v snap &>/dev/null && { local c=$(snap list 2>/dev/null | wc -l); total=$((total+c)); managers+=("$c (snap)"); }
-    command -v apk &>/dev/null && { local c=$(apk info 2>/dev/null | wc -l); total=$((total+c)); managers+=("$c (apk)"); }
-    command -v xbps-query &>/dev/null && { local c=$(xbps-query -l 2>/dev/null | wc -l); total=$((total+c)); managers+=("$c (xbps)"); }
-    command -v brew &>/dev/null && { local c=$(( $(brew list --formula 2>/dev/null | wc -l) + $(brew list --cask 2>/dev/null | wc -l) )); total=$((total+c)); managers+=("$c (brew)"); }
-    command -v port &>/dev/null && { local c=$(port installed 2>/dev/null | wc -l); total=$((total+c)); managers+=("$c (port)"); }
-    command -v eopkg &>/dev/null && { local c=$(eopkg list - installed 2>/dev/null | wc -l); total=$((total+c)); managers+=("$c (eopkg)"); }
-    command -v guix &>/dev/null && { local c=$(guix package 2>/dev/null | grep -cE '^\s+\S'); total=$((total+c)); managers+=("$c (guix)"); }
-    command -v pkg &>/dev/null && { local c=$(pkg info 2>/dev/null | wc -l); total=$((total+c)); managers+=("$c (pkg)"); }
-    command -v cargo &>/dev/null && { local c=$(cargo install --list 2>/dev/null | wc -l); total=$((total+c)); managers+=("$c (cargo)"); }
-    command -v gem &>/dev/null && { local c=$(gem list 2>/dev/null | wc -l); total=$((total+c)); managers+=("$c (gem)"); }
-    command -v npm &>/dev/null && { local c=$(npm list -g --depth=0 2>/dev/null | wc -l); total=$((total+c)); managers+=("$c (npm)"); }
-    command -v pip &>/dev/null && { local c=$(pip list 2>/dev/null | wc -l); total=$((total+c)); managers+=("$c (pip)"); }
+    HAS flatpak && { local c=$(flatpak list --columns=application 2>/dev/null | wc -l); total=$((total+c)); managers+=("$c (flatpak)"); }
+    HAS snap && { local c=$(snap list 2>/dev/null | wc -l); total=$((total+c)); managers+=("$c (snap)"); }
+    HAS apk && { local c=$(apk info 2>/dev/null | wc -l); total=$((total+c)); managers+=("$c (apk)"); }
+    HAS xbps-query && { local c=$(xbps-query -l 2>/dev/null | wc -l); total=$((total+c)); managers+=("$c (xbps)"); }
+    HAS brew && { local c=$(( $(brew list --formula 2>/dev/null | wc -l) + $(brew list --cask 2>/dev/null | wc -l) )); total=$((total+c)); managers+=("$c (brew)"); }
+    HAS port && { local c=$(port installed 2>/dev/null | wc -l); total=$((total+c)); managers+=("$c (port)"); }
+    HAS eopkg && { local c=$(eopkg list - installed 2>/dev/null | wc -l); total=$((total+c)); managers+=("$c (eopkg)"); }
+    HAS guix &>/dev/null && { local c=$(guix package 2>/dev/null | grep -cE '^\s+\S'); total=$((total+c)); managers+=("$c (guix)"); }
+    HAS pkg && { local c=$(pkg info 2>/dev/null | wc -l); total=$((total+c)); managers+=("$c (pkg)"); }
+    HAS cargo && { local c=$(cargo install --list 2>/dev/null | wc -l); total=$((total+c)); managers+=("$c (cargo)"); }
+    HAS gem && { local c=$(gem list 2>/dev/null | wc -l); total=$((total+c)); managers+=("$c (gem)"); }
+    HAS npm && { local c=$(npm list -g --depth=0 2>/dev/null | wc -l); total=$((total+c)); managers+=("$c (npm)"); }
+    HAS pip &>/dev/null && { local c=$(pip list 2>/dev/null | wc -l); total=$((total+c)); managers+=("$c (pip)"); }
     [ ${#managers[@]} -eq 0 ] && echo "Unknown" || echo "$total total (${managers[*]})"
 }
 
@@ -532,7 +552,7 @@ get_resolution() {
     fi
     if [ "$IS_WINDOWS" = "1" ]; then
         local res=""
-        if command -v wmic &>/dev/null; then
+        if HAS wmic &>/dev/null; then
             res=$(wmic desktopmonitor get ScreenWidth,ScreenHeight /value 2>/dev/null | grep -iE 'screenwidth|screenheight' | paste -sd'x' - | tr -d ' ')
         fi
         if [ -z "$res" ]; then
@@ -544,9 +564,9 @@ get_resolution() {
     if [ "$IS_TERMUX" = "1" ]; then
         local r=$(wm size 2>/dev/null | grep -oE '[0-9]+x[0-9]+' | awk '{r=$0} END{print r}')
         echo "${r:-Unknown}"
-    elif command -v hyprctl &>/dev/null && [ -n "$HYPRLAND_INSTANCE_SIGNATURE" ]; then
+    elif HAS hyprctl && [ -n "$HYPRLAND_INSTANCE_SIGNATURE" ]; then
         hyprctl monitors 2>/dev/null | grep -oE '[0-9]+x[0-9]+' | head -1
-    elif command -v xrandr &>/dev/null && [ -n "$DISPLAY" ]; then
+    elif HAS xrandr && [ -n "$DISPLAY" ]; then
         xrandr --current 2>/dev/null | grep '\*' | head -1 | awk '{print $1}'
     else
         echo "Unknown"
@@ -586,7 +606,7 @@ get_cpu() {
 get_gpu() {
     if [ "$IS_WINDOWS" = "1" ]; then
         local gpu=""
-        if command -v wmic &>/dev/null; then
+        if HAS wmic &>/dev/null; then
             gpu=$(wmic path win32_videocontroller get Name /value 2>/dev/null | grep -iE 'name=' | head -n1 | cut -d= -f2- | sed 's/^[[:space:]]*//')
         fi
         [ -z "$gpu" ] && gpu=$(run_powershell '(Get-CimInstance Win32_VideoController).Name')
@@ -608,7 +628,7 @@ get_gpu() {
         echo "Unknown"; return
     fi
     local gpu=""
-    command -v lspci &>/dev/null && gpu=$(lspci 2>/dev/null | grep -iE 'vga|3d controller|display controller' | head -1 | cut -d: -f3- | sed 's/^[[:space:]]*//; s/\[(rev[^])]*\]//; s/([^)]*) *$//')
+    HAS lspci &>/dev/null && gpu=$(lspci 2>/dev/null | grep -iE 'vga|3d controller|display controller' | head -1 | cut -d: -f3- | sed 's/^[[:space:]]*//; s/\[(rev[^])]*\]//; s/([^)]*) *$//')
     echo "${gpu:-Unknown}"
 }
 
@@ -643,7 +663,7 @@ get_swap() {
         fi
         return
     fi
-    if command -v free &>/dev/null; then
+    if HAS free; then
         free -b 2>/dev/null | awk 'NR==3 {if ($2 > 0) printf "%.2f GiB / %.2f GiB (%.0f%%)", $3/1073741824, $2/1073741824, $3/$2*100; else print "None"}'
     else
         awk '/^SwapTotal/ {t=$2} /^SwapFree/ {f=$2} END {if (t > 0) printf "%.2f GiB / %.2f GiB (%.0f%%)", (t-f)/1048576, t/1048576, (t-f)/t*100; else print "None"}' /proc/meminfo 2>/dev/null
@@ -658,7 +678,7 @@ get_uptime() {
     fi
     if [ "$IS_WINDOWS" = "1" ]; then
         local up=""
-        if command -v wmic &>/dev/null; then
+        if HAS wmic &>/dev/null; then
             local boot=$(wmic os get LastBootUpTime /value 2>/dev/null | grep -iE 'lastbootuptime=' | head -n1 | cut -d= -f2-)
             if [ -n "$boot" ]; then
                 # WMI timestamp: 20240115123456.000000+000
